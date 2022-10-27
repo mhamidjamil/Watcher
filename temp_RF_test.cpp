@@ -1,7 +1,14 @@
-int pin1 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
-int pin2 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
-int pin3 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
-int pin4 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
+// int pin1 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
+// int pin2 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
+// int pin3 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
+// int pin4 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
+
+int pin1 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
+int pin2 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
+int pin3 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
+int pin4 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
+int defaultDelay = 50;
+
 void setup()
 {
     Serial.begin(9600);
@@ -16,64 +23,82 @@ void setup()
 }
 void SecondManager(int inpt)
 {
+    Serial.println("SecondManager : " + String(inpt));
     int out1 = inpt % 2;
     int out2 = 0;
     int out3 = 0;
     int out4 = 0;
     inpt = inpt / 2;
-    if (input > 2)
+    if (inpt >= 2)
     {
         out2 = inpt % 2;
         inpt = inpt / 2;
-        if (input > 2)
+        if (inpt >= 2)
         {
             out3 = inpt % 2;
             inpt = inpt / 2;
-            if (input > 2)
+            if (inpt >= 2)
             {
                 out4 = inpt % 2;
                 inpt = inpt / 2;
             }
+            else if (inpt == 1)
+            {
+                out4 = 1;
+            }
+        }
+        else if (inpt == 1)
+        {
+            out3 = 1;
         }
     }
+    else if (inpt == 1)
+    {
+        out2 = 1;
+    }
     Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
-    SwitchInverter(out4, out3, out2, out1);
+    SwitchInverter(out4, out3, out2, out1, false);
 }
-void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4)
+void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4, bool invert)
 {
 
-    // if (inpuT1 == 1)
-    // {
-    //     digitalWrite(pin1, LOW);
-    // }
-    // else
-    // {
-    //     digitalWrite(pin1, HIGH);
-    // }
-    // if (inpuT2 == 1)
-    // {
-    //     digitalWrite(pin2, LOW);
-    // }
-    // else
-    // {
-    //     digitalWrite(pin2, HIGH);
-    // }
-    // if (inpuT3 == 1)
-    // {
-    //     digitalWrite(pin3, LOW);
-    // }
-    // else
-    // {
-    //     digitalWrite(pin3, HIGH);
-    // }
-    // if (inpuT4 == 1)
-    // {
-    //     digitalWrite(pin4, LOW);
-    // }
-    // else
-    // {
-    //     digitalWrite(pin4, HIGH);
-    // }
+    if (inpuT1 == 1 && invert)
+    {
+        digitalWrite(pin1, LOW);
+    }
+    else
+    {
+        digitalWrite(pin1, HIGH);
+    }
+    if (inpuT2 == 1 && invert)
+    {
+        digitalWrite(pin2, LOW);
+    }
+    else
+    {
+        digitalWrite(pin2, HIGH);
+    }
+    if (inpuT3 == 1 && invert)
+    {
+        digitalWrite(pin3, LOW);
+    }
+    else
+    {
+        digitalWrite(pin3, HIGH);
+    }
+    if (inpuT4 == 1 && invert)
+    {
+        digitalWrite(pin4, LOW);
+    }
+    else
+    {
+        digitalWrite(pin4, HIGH);
+    }
+    delay(defaultDelay);
+    digitalWrite(pin1, HIGH);
+    digitalWrite(pin2, HIGH);
+    digitalWrite(pin3, HIGH);
+    digitalWrite(pin4, HIGH);
 }
 void switchManager(int pinNo, int status)
 {
@@ -120,9 +145,9 @@ void TestStream(int delay_)
 }
 void BinaryManager(int number)
 {
-    for (; number <= 15; number -= 15)
+    for (; number >= 15; number -= 15)
     {
-        SwitchInverter(1, 1, 1, 1);
+        SwitchInverter(1, 1, 1, 1, true);
     }
     SecondManager(number);
 }
@@ -151,9 +176,10 @@ void loop()
             }
             else
             {
-                TestStream(input);
+                Serial.print("-->" + String(input));
+                // TestStream(input);
+                BinaryManager(input);
             }
-            BinaryManager(input);
             Serial.println();
         }
     }
