@@ -6,19 +6,37 @@ int globPin1Value = 0;
 int globPin2Value = 0;
 int globPin3Value = 0;
 int globPin4Value = 0;
-int VT_pin = 14;
-int indicator = LED_BUILTIN;
-void resetReciver(int mode);
 void setup()
 {
-    Serial.begin(9600);
+    Serial.begin(115200);
     pinMode(pin1, INPUT);
     pinMode(pin2, INPUT);
     pinMode(pin3, INPUT);
     pinMode(pin4, INPUT);
-    pinMode(VT_pin, OUTPUT);
-    pinMode(indicator, OUTPUT);
+    // pinMode(VT_pin, OUTPUT);
+    // pinMode(indicator, OUTPUT);
     // resetReciver(1);
+}
+void bineryToDecimal(int pin1, int pin2, int pin3, int pin4)
+{
+    int decimal = 0;
+    if (pin1 == 1)
+    {
+        decimal += 8;
+    }
+    if (pin2 == 1)
+    {
+        decimal += 4;
+    }
+    if (pin3 == 1)
+    {
+        decimal += 2;
+    }
+    if (pin4 == 1)
+    {
+        decimal += 1;
+    }
+    Serial.println(decimal);
 }
 void loop()
 {
@@ -34,29 +52,13 @@ void loop()
         globPin4Value = globPin4ValueTemp;
         // digitalWrite(indicator, HIGH);
         Serial.println("->" + String(globPin1ValueTemp) + "," + String(globPin2ValueTemp) + "," + String(globPin3ValueTemp) + "," + String(globPin4ValueTemp) + ".");
+        if (globPin1Value == 1 || globPin2Value == 1 || globPin3Value == 1 || globPin4Value == 1)
+        {
+            bineryToDecimal(globPin1Value, globPin2Value, globPin3Value, globPin4Value);
+        }
+
         // delay(500);
         // digitalWrite(indicator, LOW);
     }
     // delay(50);
-}
-void resetReciver(int mode)
-{
-    Serial.println("Reseting Reciver");
-    digitalWrite(VT_pin, LOW);
-
-    for (int i = 1; i <= 8; i++)
-    {
-        digitalWrite(VT_pin, HIGH);
-        delay(300);
-        digitalWrite(VT_pin, LOW);
-        delay(300);
-    }
-    delay(4000);
-    for (; mode > 0; mode--)
-    {
-        digitalWrite(VT_pin, HIGH);
-        delay(300);
-        digitalWrite(VT_pin, LOW);
-        delay(300);
-    }
 }

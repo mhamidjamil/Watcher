@@ -58,6 +58,149 @@ char *convert_int16_to_str(int16_t i)
     sprintf(tmp_str, "%6d", i);
     return tmp_str;
 }
+// * RF sender config :
+int pin1 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
+int pin2 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
+int pin3 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
+int pin4 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
+int defaultDelay = 48;
+int getPinNumber(int required_pin)
+{
+    if (required_pin == 1)
+    {
+        return pin1;
+    }
+    else if (required_pin == 2)
+    {
+        return pin2;
+    }
+    else if (required_pin == 3)
+    {
+        return pin3;
+    }
+    else if (required_pin == 4)
+    {
+        return pin4;
+    }
+    else
+    {
+        Serial.println("Invalid pin number! (getPinNumber error)");
+        return 0;
+    }
+}
+void offOuput()
+{
+    delay(defaultDelay);
+    digitalWrite(pin1, HIGH);
+    digitalWrite(pin2, HIGH);
+    digitalWrite(pin3, HIGH);
+    digitalWrite(pin4, HIGH);
+    delay(defaultDelay);
+}
+void deciaml_to_binary(int inpt)
+{
+    Serial.println("deciaml_to_binary : " + String(inpt));
+    int out1 = inpt % 2;
+    int out2 = 0;
+    int out3 = 0;
+    int out4 = 0;
+    inpt = inpt / 2;
+    if (inpt >= 2)
+    {
+        out2 = inpt % 2;
+        inpt = inpt / 2;
+        if (inpt >= 2)
+        {
+            out3 = inpt % 2;
+            inpt = inpt / 2;
+            if (inpt >= 2)
+            {
+                out4 = inpt % 2;
+                inpt = inpt / 2;
+            }
+            else if (inpt == 1)
+            {
+                out4 = 1;
+            }
+        }
+        else if (inpt == 1)
+        {
+            out3 = 1;
+        }
+    }
+    else if (inpt == 1)
+    {
+        out2 = 1;
+    }
+    Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
+    delay(defaultDelay);
+    SwitchInverter(out4, out3, out2, out1, true);
+    offOuput();
+}
+void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4, bool invert)
+{
+    int out_1;
+    int out_2;
+    int out_3;
+    int out_4;
+    if (invert)
+    {
+        out_1 = !inpuT1;
+        out_2 = !inpuT2;
+        out_3 = !inpuT3;
+        out_4 = !inpuT4;
+    }
+    else
+    {
+        out_1 = inpuT1;
+        out_2 = inpuT2;
+        out_3 = inpuT3;
+        out_4 = inpuT4;
+    }
+    delay(defaultDelay);
+    digitalWrite(pin1, out_1);
+    digitalWrite(pin2, out_2);
+    digitalWrite(pin3, out_3);
+    digitalWrite(pin4, out_4);
+    delay(defaultDelay);
+    offOuput();
+}
+void switchManager(int pinNo, int invert_status)
+{
+
+    if (invert_status == 0)
+    {
+        digitalWrite(getPinNumber(pinNo), HIGH);
+    }
+    else
+    {
+        digitalWrite(getPinNumber(pinNo), LOW);
+    }
+}
+void TestStream(int delay_)
+{
+    Serial.println("Delay time: " + String(delay_));
+    for (int i = 1; i <= 4; i++)
+    {
+        switchManager(i, 1);
+        delay(delay_);
+        switchManager(i, 0);
+        // delay(delay_);
+    }
+}
+void BinaryManager(int number)
+{
+    Serial.println("Binary manager got : " + String(number));
+    for (; number >= 15; number -= 15)
+    {
+        SwitchInverter(1, 1, 1, 1, true);
+        delay(defaultDelay);
+    }
+    deciaml_to_binary(number);
+}
+
+bool manuallight = false;
+// * RF reciver config end
 int gy_beep = 0;
 // gy ends ***************************
 void check_gy_sensor()
@@ -236,7 +379,7 @@ void inputHandler(int choice)
     else if (choice == 3)
     {
         // RF module
-        Serial.println("Enter 1 to Force pin high");
+        Serial.println("Enter 1 to Force pin high/low");
         Serial.println("Enter 2 to send Binary data");
         Serial.println("Enter 3 to test all output pins");
         choice = getString().toInt();
@@ -247,15 +390,22 @@ void inputHandler(int choice)
             choice = getString().toInt();
             Serial.println("Enter Delay:");
             tempdaly = getString().toInt();
-            if (choice > 4 || choice < 1)
+            int choice2;
+            Serial.println("Enter 1 to force pin high");
+            Serial.println("Enter 2 to force pin low");
+            choice2 = getString().toInt();
+            if (choice2 == 1)
             {
-                Serial.println("Invalid pin number");
-            }
-            else
-            {
-                digitalWrite(choice, HIGH);
+                digitalWrite(getPinNumber(choice), LOW);
                 delay(tempdaly);
-                digitalWrite(choice, LOW);
+                if (tempdaly != 420)
+                {
+                    digitalWrite(getPinNumber(choice), HIGH);
+                }
+            }
+            else if (choice2 == 2)
+            {
+                digitalWrite(getPinNumber(choice), HIGH);
             }
         }
         else if (choice == 2)
@@ -268,158 +418,15 @@ void inputHandler(int choice)
         }
         else if (choice == 3)
         {
-            Serial.println("Enter pin number");
+            Serial.println("Enter delay : ");
             choice = getString().toInt();
-            for (int i = 0; i < choice; i++)
-            {
-                digitalWrite(i, LOW);
-                delay(100);
-                digitalWrite(i, HIGH);
-            }
+            TestStream(choice);
         }
     }
     choice = 0;
     Serial.println("Handler out");
 }
-// * RF sender config :
-int pin1 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
-int pin2 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
-int pin3 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
-int pin4 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
-int defaultDelay = 48;
-void offOuput()
-{
-    delay(defaultDelay);
-    digitalWrite(pin1, HIGH);
-    digitalWrite(pin2, HIGH);
-    digitalWrite(pin3, HIGH);
-    digitalWrite(pin4, HIGH);
-    delay(defaultDelay);
-}
-void deciaml_to_binary(int inpt)
-{
-    Serial.println("deciaml_to_binary : " + String(inpt));
-    int out1 = inpt % 2;
-    int out2 = 0;
-    int out3 = 0;
-    int out4 = 0;
-    inpt = inpt / 2;
-    if (inpt >= 2)
-    {
-        out2 = inpt % 2;
-        inpt = inpt / 2;
-        if (inpt >= 2)
-        {
-            out3 = inpt % 2;
-            inpt = inpt / 2;
-            if (inpt >= 2)
-            {
-                out4 = inpt % 2;
-                inpt = inpt / 2;
-            }
-            else if (inpt == 1)
-            {
-                out4 = 1;
-            }
-        }
-        else if (inpt == 1)
-        {
-            out3 = 1;
-        }
-    }
-    else if (inpt == 1)
-    {
-        out2 = 1;
-    }
-    Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
-    delay(defaultDelay);
-    SwitchInverter(out4, out3, out2, out1, true);
-    offOuput();
-}
-void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4, bool invert)
-{
-    int out_1;
-    int out_2;
-    int out_3;
-    int out_4;
-    if (invert)
-    {
-        out_1 = !inpuT1;
-        out_2 = !inpuT2;
-        out_3 = !inpuT3;
-        out_4 = !inpuT4;
-    }
-    else
-    {
-        out_1 = inpuT1;
-        out_2 = inpuT2;
-        out_3 = inpuT3;
-        out_4 = inpuT4;
-    }
-    delay(defaultDelay);
-    digitalWrite(pin1, out_1);
-    digitalWrite(pin2, out_2);
-    digitalWrite(pin3, out_3);
-    digitalWrite(pin4, out_4);
-    delay(defaultDelay);
-    offOuput();
-}
-void switchManager(int pinNo, int status)
-{
-    int PinNo_;
-    switch (pinNo)
-    {
-    case 1:
-        PinNo_ = pin1;
-        break;
-    case 2:
-        PinNo_ = pin2;
-        break;
-    case 3:
-        PinNo_ = pin3;
-        break;
-    case 4:
-        PinNo_ = pin4;
-        break;
 
-    default:
-        Serial.println("Invalid pin number");
-        break;
-    }
-
-    if (status == 1)
-    {
-        digitalWrite(PinNo_, HIGH);
-    }
-    else
-    {
-        digitalWrite(PinNo_, LOW);
-    }
-}
-void TestStream(int delay_)
-{
-    Serial.println("Delay time: " + String(delay_));
-    for (int i = 1; i <= 4; i++)
-    {
-        switchManager(i, 0);
-        delay(delay_);
-        switchManager(i, 1);
-        delay(delay_);
-    }
-}
-void BinaryManager(int number)
-{
-    Serial.println("Binary manager got : " + String(number));
-    for (; number >= 15; number -= 15)
-    {
-        SwitchInverter(1, 1, 1, 1, true);
-        delay(defaultDelay);
-    }
-    deciaml_to_binary(number);
-}
-
-bool manuallight = false;
-// * RF reciver config end
 void setup()
 {
     pinMode(pin1, OUTPUT);
