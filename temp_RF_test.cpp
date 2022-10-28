@@ -7,8 +7,8 @@ int pin1 = 5; // efective on Sender pin: 4 and reciver pin: D0 (1st) (Red)
 int pin2 = 7; // efective on Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
 int pin3 = 3; // efective on Sender pin: 1 and reciver pin: D2 (3rd) (Green)
 int pin4 = 8; // efective on Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
-int defaultDelay = 50;
-
+int defaultDelay = 48;
+void offOuput();
 void setup()
 {
     Serial.begin(9600);
@@ -20,6 +20,15 @@ void setup()
     digitalWrite(pin2, HIGH);
     digitalWrite(pin3, HIGH);
     digitalWrite(pin4, HIGH);
+}
+void offOuput()
+{
+    delay(defaultDelay);
+    digitalWrite(pin1, HIGH);
+    digitalWrite(pin2, HIGH);
+    digitalWrite(pin3, HIGH);
+    digitalWrite(pin4, HIGH);
+    delay(defaultDelay);
 }
 void SecondManager(int inpt)
 {
@@ -57,48 +66,37 @@ void SecondManager(int inpt)
         out2 = 1;
     }
     Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
-    SwitchInverter(out4, out3, out2, out1, false);
+    delay(defaultDelay);
+    SwitchInverter(out4, out3, out2, out1, true);
+    offOuput();
 }
 void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4, bool invert)
 {
-
-    if (inpuT1 == 1 && invert)
+    int out_1;
+    int out_2;
+    int out_3;
+    int out_4;
+    if (invert)
     {
-        digitalWrite(pin1, LOW);
+        out_1 = !inpuT1;
+        out_2 = !inpuT2;
+        out_3 = !inpuT3;
+        out_4 = !inpuT4;
     }
     else
     {
-        digitalWrite(pin1, HIGH);
-    }
-    if (inpuT2 == 1 && invert)
-    {
-        digitalWrite(pin2, LOW);
-    }
-    else
-    {
-        digitalWrite(pin2, HIGH);
-    }
-    if (inpuT3 == 1 && invert)
-    {
-        digitalWrite(pin3, LOW);
-    }
-    else
-    {
-        digitalWrite(pin3, HIGH);
-    }
-    if (inpuT4 == 1 && invert)
-    {
-        digitalWrite(pin4, LOW);
-    }
-    else
-    {
-        digitalWrite(pin4, HIGH);
+        out_1 = inpuT1;
+        out_2 = inpuT2;
+        out_3 = inpuT3;
+        out_4 = inpuT4;
     }
     delay(defaultDelay);
-    digitalWrite(pin1, HIGH);
-    digitalWrite(pin2, HIGH);
-    digitalWrite(pin3, HIGH);
-    digitalWrite(pin4, HIGH);
+    digitalWrite(pin1, out_1);
+    digitalWrite(pin2, out_2);
+    digitalWrite(pin3, out_3);
+    digitalWrite(pin4, out_4);
+    delay(defaultDelay);
+    offOuput();
 }
 void switchManager(int pinNo, int status)
 {
@@ -145,20 +143,30 @@ void TestStream(int delay_)
 }
 void BinaryManager(int number)
 {
+    Serial.println("Binary manager got : " + String(number));
     for (; number >= 15; number -= 15)
     {
         SwitchInverter(1, 1, 1, 1, true);
+        delay(defaultDelay);
     }
     SecondManager(number);
 }
+int cmd = 0;
+bool manuallight = false;
 void loop()
 {
     if (Serial.available() > 0)
     {
         int input = Serial.parseInt();
+        // if (input > 0)
         if (input > 0)
         {
-            if (input < 20)
+            if (input == 420)
+            {
+                manuallight = !manuallight;
+                Serial.println("Manual light :" + String(manuallight));
+            }
+            else if (input < 20 && manuallight)
             {
                 Serial.print("working on : " + String(input));
                 if (input >= 10)
