@@ -10,7 +10,6 @@ int d1[19];
 int d2[19];
 // servo end
 int choice = 0;
-int delayed = 10;
 int input_timeout = 10000;
 // Ultrasound start
 int critical_zone = 25;
@@ -50,7 +49,6 @@ int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for acce
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0, mainZ = 0;
 int softMargin = 65, global_X = 0, global_Y = 0, global_Z = 0;
-int led_counter = 0;
 char tmp_str[7]; // temporary variable used in convert function
 
 char *convert_int16_to_str(int16_t i)
@@ -198,8 +196,31 @@ void BinaryManager(int number)
     }
     deciaml_to_binary(number);
 }
-
-bool manuallight = false;
+void sendRFmsg(int msgCode)
+{
+    // 1 for movment detected by GYRO
+    // 2 for movment detected by ULTRASOUND
+    // 3 for movment detected by both
+    if (msgCode == 1)
+    {
+        BinaryManager(msgCode);
+        Serial.println("Gyro detected movment msg sent");
+    }
+    else if (msgCode == 2)
+    {
+        BinaryManager(msgCode);
+        Serial.println("Ultrasonic detected movment msg sent");
+    }
+    else if (msgCode == 3)
+    {
+        BinaryManager(msgCode);
+        Serial.println("Both detected movment msg sent");
+    }
+    else
+    {
+        Serial.println("Invalid msg code! (sendRFmsg error)");
+    }
+}
 // * RF reciver config end
 int gy_beep = 0;
 // gy ends ***************************
@@ -242,7 +263,8 @@ void check_gy_sensor()
         }
         else if (gy_beep == 1)
         {
-            custom_beep(3000, 100);
+            custom_beep(2000, 200);
+            sendRFmsg(1);
             Serial.println("#######################");
             gy_beep--;
         }
