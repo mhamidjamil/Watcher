@@ -30,9 +30,9 @@ void offOuput()
     digitalWrite(pin4, HIGH);
     delay(defaultDelay);
 }
-void SecondManager(int inpt)
+void deciaml_to_binary(int inpt)
 {
-    Serial.println("SecondManager : " + String(inpt));
+    Serial.println("deciaml_to_binary : " + String(inpt));
     int out1 = inpt % 2;
     int out2 = 0;
     int out3 = 0;
@@ -149,7 +149,7 @@ void BinaryManager(int number)
         SwitchInverter(1, 1, 1, 1, true);
         delay(defaultDelay);
     }
-    SecondManager(number);
+    deciaml_to_binary(number);
 }
 int cmd = 0;
 bool manuallight = false;
