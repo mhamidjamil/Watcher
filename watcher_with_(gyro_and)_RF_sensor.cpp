@@ -1,4 +1,5 @@
 // ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
+//$ 2:24 AM 30/NOV/22
 // * servo start ------------------------------
 #include <Servo.h>
 Servo Myservo;
