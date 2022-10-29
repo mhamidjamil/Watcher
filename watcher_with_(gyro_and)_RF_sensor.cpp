@@ -1,4 +1,4 @@
-// * servo start
+// * servo start ------------------------------
 #include <Servo.h>
 Servo Myservo;
 int pos;
@@ -8,10 +8,33 @@ int BuzzerBeeping = 0;
 bool servo_Rotaion = true;
 int d1[19];
 int d2[19];
-// * servo end
+// * servo end --------------------------------
 int choice = 0;
-int input_timeout = 10000;
-// + Ultrasound start  -------------------------------------
+// int input_timeout = 10000;
+// # Functions =============================================
+int getPinNumber(int required_pin);
+void switchManager(int PinNo_, int status);
+void TestStream(int delay_);
+void BinaryManager(int number);
+void deciaml_to_binary(int number);
+void SwitchInverter(int a, int b, int c, int d, bool status);
+void TestStream(int delay_);
+void BinaryManager(int number);
+void sendRFmsg(int msgCode);
+void check_gy_sensor(bool print_records);
+void inputHandler(int choice);
+void servoRotation();
+void update_distance(bool check);
+void check_critical_distance();
+void check_warning_distance();
+void beep();
+void custom_beep(int beep_for, int delay_bt_beep);
+void blynk(int defined_delay);
+String getString();
+void choise_handler(int *p);
+// # 20+ functions Defined =====================================
+
+//  + Ultrasound start  -------------------------------------
 int critical_zone = 25;
 int critical_zone_buzzer = 4;
 
@@ -205,7 +228,7 @@ void sendRFmsg(int msgCode)
 }
 // ` RF reciver config end --------------------
 
-//~ gy start ***************************
+//~ gyro start ***************************
 
 #include "Wire.h" // This library allows you to communicate with I2C devices.
 
@@ -215,22 +238,21 @@ int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for acce
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0, mainZ = 0;
-int softMargin = 65, global_X = 0, global_Y = 0, global_Z = 0;
+int softMargin = 150, global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
-
 char *convert_int16_to_str(int16_t i)
 { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
     sprintf(tmp_str, "%6d", i);
     return tmp_str;
 }
 int gy_beep = 0;
-//~ gy ends ***************************
-void check_gy_sensor()
+void check_gy_sensor(bool print_records)
 {
     // if (servo_Rotaion)
     // {
     //     servo_Rotaion = false;
     // }
+    delay(100);
     Wire.beginTransmission(MPU_ADDR);
     Wire.write(0x3B);                        // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
     Wire.endTransmission(false);             // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
@@ -240,13 +262,16 @@ void check_gy_sensor()
     accelerometer_x = Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
     accelerometer_y = Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
     accelerometer_z = Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
-    Serial.print("aX = ");
-    Serial.print(convert_int16_to_str(accelerometer_x));
-    Serial.print(" | aY = ");
-    Serial.print(convert_int16_to_str(accelerometer_y));
-    Serial.print(" | aZ = ");
-    Serial.print(convert_int16_to_str(accelerometer_z));
-    Serial.print(" ");
+    if (print_records)
+    {
+        Serial.print("--->aX = ");
+        Serial.print(convert_int16_to_str(accelerometer_x));
+        Serial.print(" | aY = ");
+        Serial.print(convert_int16_to_str(accelerometer_y));
+        Serial.print(" | aZ = ");
+        Serial.print(convert_int16_to_str(accelerometer_z));
+        Serial.println(" ");
+    }
 
     mainX = accelerometer_x;
     mainY = accelerometer_y;
@@ -258,6 +283,16 @@ void check_gy_sensor()
         global_X = mainX;
         global_Y = mainY;
         global_Z = mainZ;
+        if (!print_records)
+        {
+            Serial.print("--->aX = ");
+            Serial.print(convert_int16_to_str(accelerometer_x));
+            Serial.print(" | aY = ");
+            Serial.print(convert_int16_to_str(accelerometer_y));
+            Serial.print(" | aZ = ");
+            Serial.print(convert_int16_to_str(accelerometer_z));
+            Serial.println(" ");
+        }
         if (gy_beep == 0)
         {
             gy_beep++;
@@ -271,6 +306,7 @@ void check_gy_sensor()
         }
     }
 }
+//~ gyro ends ***************************
 void inputHandler(int choice)
 {
     Serial.println("input Handler call");
@@ -283,7 +319,7 @@ void inputHandler(int choice)
         Serial.println("1: critical_zone ," + String(critical_zone));
         Serial.println("2: warning_zone ," + String(warning_zone));
         Serial.println("3: alarm_time ," + String(alarm_time));
-        Serial.println("4: input_timeout ," + String(input_timeout));
+        // Serial.println("4: input_timeout ," + String(input_timeout));
         Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
         Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
         Serial.println("7: softMargin ," + String(softMargin));
@@ -306,10 +342,10 @@ void inputHandler(int choice)
         {
             choise_handler(&alarm_time);
         }
-        else if (choice == 4)
-        {
-            choise_handler(&input_timeout);
-        }
+        // else if (choice == 4)
+        // {
+        //     choise_handler(&input_timeout);
+        // }
         else if (choice == 5)
         {
             choise_handler(&rotation_speed_delay);
@@ -490,7 +526,7 @@ void loop()
             inputHandler(choice);
         }
     }
-    check_gy_sensor();
+    check_gy_sensor(true);
     if (servo_Rotaion)
     {
         servoRotation();
@@ -509,8 +545,9 @@ void servoRotation()
     {
         delay(300);
     }
-    for (pos = 0; pos <= 180; pos++)
+    for (pos = 0; pos <= 180 && servo_Rotaion; pos++)
     {
+
         if (Serial.available() >= 1)
         {
             choice = Serial.parseInt();
@@ -519,9 +556,9 @@ void servoRotation()
                 inputHandler(choice);
             }
         }
-
         Myservo.write(pos);
         delay(rotation_speed_delay);
+        check_gy_sensor(false);
 
         if (pos % display_reading_after == 0)
         {
@@ -535,7 +572,7 @@ void servoRotation()
 
     delay(300);
 
-    for (pos = 180; pos >= 0; pos--)
+    for (pos = 180; pos >= 0 && servo_Rotaion; pos--)
     {
         if (Serial.available() >= 1)
         {
@@ -548,6 +585,7 @@ void servoRotation()
 
         Myservo.write(pos);
         delay(rotation_speed_delay);
+        check_gy_sensor(false);
 
         if (pos % display_reading_after == 0)
         {
@@ -691,8 +729,7 @@ void custom_beep(int beep_for, int delay_bt_beep)
 }
 void blynk(int defined_delay)
 {
-    digitalWrite(LED_BUILTIN,
-                 HIGH);             // turn the LED on (HIGH is the voltage level)
+    digitalWrite(LED_BUILTIN, HIGH);
     delay(defined_delay);           // wait for a second
     digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
     // delay(1000);
