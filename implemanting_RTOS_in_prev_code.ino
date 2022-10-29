@@ -1,3 +1,7 @@
+#include <Arduino_FreeRTOS.h>
+void Gyro_manager(void *pvParameters);
+void Servo_manager(void *pvParameters);
+// $ RTOS Stuff.
 // * servo start
 #include <Servo.h>
 Servo Myservo;
@@ -70,12 +74,14 @@ int getPinNumber(int required_pin)
 }
 void offOuput()
 {
-    delay(defaultDelay);
+    // delay(defaultDelay);
+    vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
     digitalWrite(pin1, HIGH);
     digitalWrite(pin2, HIGH);
     digitalWrite(pin3, HIGH);
     digitalWrite(pin4, HIGH);
-    delay(defaultDelay);
+    // delay(defaultDelay);
+    vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
 }
 void deciaml_to_binary(int inpt)
 {
@@ -113,7 +119,8 @@ void deciaml_to_binary(int inpt)
         out2 = 1;
     }
     Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
-    delay(defaultDelay);
+    // delay(defaultDelay);
+    vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
     SwitchInverter(out4, out3, out2, out1, true);
     offOuput();
 }
@@ -137,12 +144,14 @@ void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4, bool invert)
         out_3 = inpuT3;
         out_4 = inpuT4;
     }
-    delay(defaultDelay);
+    // delay(defaultDelay);
+    vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
     digitalWrite(pin1, out_1);
     digitalWrite(pin2, out_2);
     digitalWrite(pin3, out_3);
     digitalWrite(pin4, out_4);
-    delay(defaultDelay);
+    // delay(defaultDelay);
+    vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
     offOuput();
 }
 void switchManager(int pinNo, int invert_status)
@@ -163,7 +172,8 @@ void TestStream(int delay_)
     for (int i = 1; i <= 4; i++)
     {
         switchManager(i, 1);
-        delay(delay_);
+        // delay(delay_);
+        vTaskDelay(delay_ / portTICK_PERIOD_MS);
         switchManager(i, 0);
         // delay(delay_);
     }
@@ -174,7 +184,8 @@ void BinaryManager(int number)
     for (; number >= 15; number -= 15)
     {
         SwitchInverter(1, 1, 1, 1, true);
-        delay(defaultDelay);
+        // delay(defaultDelay);
+        vTaskDelay(defaultDelay / portTICK_PERIOD_MS);
     }
     deciaml_to_binary(number);
 }
@@ -204,7 +215,6 @@ void sendRFmsg(int msgCode)
     }
 }
 // ` RF reciver config end --------------------
-
 //~ gy start ***************************
 
 #include "Wire.h" // This library allows you to communicate with I2C devices.
@@ -225,49 +235,181 @@ char *convert_int16_to_str(int16_t i)
 }
 int gy_beep = 0;
 //~ gy ends ***************************
-void check_gy_sensor()
+// void check_gy_sensor()
+// {
+//     // if (servo_Rotaion)
+//     // {
+//     //     servo_Rotaion = false;
+//     // }
+//     Wire.beginTransmission(MPU_ADDR);
+//     Wire.write(0x3B);                        // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
+//     Wire.endTransmission(false);             // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
+//     Wire.requestFrom(MPU_ADDR, 7 * 2, true); // request a total of 7*2=14 registers
+
+//     // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in the same variable
+//     accelerometer_x = Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
+//     accelerometer_y = Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
+//     accelerometer_z = Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
+//     Serial.print("aX = ");
+//     Serial.print(convert_int16_to_str(accelerometer_x));
+//     Serial.print(" | aY = ");
+//     Serial.print(convert_int16_to_str(accelerometer_y));
+//     Serial.print(" | aZ = ");
+//     Serial.print(convert_int16_to_str(accelerometer_z));
+//     Serial.print(" ");
+
+//     mainX = accelerometer_x;
+//     mainY = accelerometer_y;
+//     mainZ = accelerometer_z;
+//     if (!(((global_X >= mainX - softMargin) && (global_X <= mainX + softMargin)) ||
+//           ((global_Y >= mainY - softMargin) && (global_Y <= mainY + softMargin)) ||
+//           ((global_Z >= mainZ - softMargin) && (global_Z <= mainZ + softMargin))))
+//     {
+//         global_X = mainX;
+//         global_Y = mainY;
+//         global_Z = mainZ;
+//         if (gy_beep == 0)
+//         {
+//             gy_beep++;
+//         }
+//         else if (gy_beep == 1)
+//         {
+//             custom_beep(2000, 200);
+//             sendRFmsg(1);
+//             Serial.println("#######################");
+//             gy_beep--;
+//         }
+//     }
+// }
+void Gyro_manager(void *pvParameters) // This is a task.
 {
-    // if (servo_Rotaion)
-    // {
-    //     servo_Rotaion = false;
-    // }
-    Wire.beginTransmission(MPU_ADDR);
-    Wire.write(0x3B);                        // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
-    Wire.endTransmission(false);             // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
-    Wire.requestFrom(MPU_ADDR, 7 * 2, true); // request a total of 7*2=14 registers
-
-    // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in the same variable
-    accelerometer_x = Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
-    accelerometer_y = Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
-    accelerometer_z = Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
-    Serial.print("aX = ");
-    Serial.print(convert_int16_to_str(accelerometer_x));
-    Serial.print(" | aY = ");
-    Serial.print(convert_int16_to_str(accelerometer_y));
-    Serial.print(" | aZ = ");
-    Serial.print(convert_int16_to_str(accelerometer_z));
-    Serial.print(" ");
-
-    mainX = accelerometer_x;
-    mainY = accelerometer_y;
-    mainZ = accelerometer_z;
-    if (!(((global_X >= mainX - softMargin) && (global_X <= mainX + softMargin)) ||
-          ((global_Y >= mainY - softMargin) && (global_Y <= mainY + softMargin)) ||
-          ((global_Z >= mainZ - softMargin) && (global_Z <= mainZ + softMargin))))
+    (void)pvParameters;
+    while (true)
     {
-        global_X = mainX;
-        global_Y = mainY;
-        global_Z = mainZ;
-        if (gy_beep == 0)
+        Serial.println("Gyro manager started");
+        Wire.beginTransmission(MPU_ADDR);
+        Wire.write(0x3B);                        // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
+        Wire.endTransmission(false);             // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
+        Wire.requestFrom(MPU_ADDR, 7 * 2, true); // request a total of 7*2=14 registers
+
+        // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in the same variable
+        accelerometer_x = Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
+        accelerometer_y = Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
+        accelerometer_z = Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
+        Serial.print("aX = ");
+        Serial.print(convert_int16_to_str(accelerometer_x));
+        Serial.print(" | aY = ");
+        Serial.print(convert_int16_to_str(accelerometer_y));
+        Serial.print(" | aZ = ");
+        Serial.print(convert_int16_to_str(accelerometer_z));
+        Serial.print(" ");
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+        mainX = accelerometer_x;
+        mainY = accelerometer_y;
+        mainZ = accelerometer_z;
+        if (!(((global_X >= mainX - softMargin) && (global_X <= mainX + softMargin)) ||
+              ((global_Y >= mainY - softMargin) && (global_Y <= mainY + softMargin)) ||
+              ((global_Z >= mainZ - softMargin) && (global_Z <= mainZ + softMargin))))
         {
-            gy_beep++;
+            global_X = mainX;
+            global_Y = mainY;
+            global_Z = mainZ;
+            if (gy_beep == 0)
+            {
+                gy_beep++;
+            }
+            else if (gy_beep == 1)
+            {
+                custom_beep(2000, 200);
+                sendRFmsg(1);
+                Serial.println("#######################");
+                gy_beep--;
+            }
         }
-        else if (gy_beep == 1)
+    }
+}
+void Servo_manager(void *pvParameters) // This is a task.
+{
+    (void)pvParameters;
+
+    // initialize serial communication at 9600 bits per second:
+    // Serial.begin(9600);
+    while (true)
+    {
+        Serial.println("Servo manager started");
+        if (servo_Rotaion)
         {
-            custom_beep(2000, 200);
-            sendRFmsg(1);
-            Serial.println("#######################");
-            gy_beep--;
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+        }
+        for (pos = 0; pos <= 180; pos++)
+        {
+            if (Serial.available() >= 1)
+            {
+                choice = Serial.parseInt();
+                if (choice >= 1)
+                {
+                    inputHandler(choice);
+                }
+            }
+
+            Myservo.write(pos);
+            vTaskDelay(rotation_speed_delay / portTICK_PERIOD_MS);
+
+            if (pos % display_reading_after == 0)
+            {
+                blynk(20);
+
+                Serial.print("Angle : " + String(pos) + " -> ");
+
+                update_distance(true);
+            }
+        }
+
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+
+        for (pos = 180; pos >= 0; pos--)
+        {
+            if (Serial.available() >= 1)
+            {
+                choice = Serial.parseInt();
+                if (choice >= 1)
+                {
+                    inputHandler(choice);
+                }
+            }
+
+            Myservo.write(pos);
+            vTaskDelay(rotation_speed_delay / portTICK_PERIOD_MS);
+
+            if (pos % display_reading_after == 0)
+            {
+                blynk(20);
+
+                Serial.print("Angle : " + String(pos) + " -> ");
+
+                update_distance(true);
+            }
+        }
+        if (!ArraysInitialized)
+        {
+            ArraysInitialized = true;
+            Serial.println("data in array is");
+
+            int ijk = 0;
+            Serial.print("D1 : ");
+            for (; ijk < 18; ijk++)
+            {
+                Serial.print(String(d1[ijk]) + ",");
+            }
+            Serial.println("");
+
+            ijk = 0;
+            Serial.print("D2 : ");
+            for (; ijk < 18; ijk++)
+            {
+                Serial.print(String(d2[ijk]) + ",");
+            }
+            Serial.println("");
         }
     }
 }
@@ -370,7 +512,7 @@ void inputHandler(int choice)
                 Serial.println("Enter delay time ");
                 choice = getString().toInt();
                 digitalWrite(critical_zone_buzzer, HIGH);
-                delay(choice);
+                vTaskDelay(choice / portTICK_PERIOD_MS);
                 digitalWrite(critical_zone_buzzer, LOW);
             }
             else if (choice == 2)
@@ -420,7 +562,8 @@ void inputHandler(int choice)
             if (choice2 == 1)
             {
                 digitalWrite(getPinNumber(choice), LOW);
-                delay(tempdaly);
+                // delay(tempdaly);
+                vTaskDelay(tempdaly / portTICK_PERIOD_MS);
                 if (tempdaly != 420)
                 {
                     digitalWrite(getPinNumber(choice), HIGH);
@@ -452,6 +595,7 @@ void inputHandler(int choice)
 
 void setup()
 {
+    Serial.begin(9600);
     pinMode(pin1, OUTPUT);
     pinMode(pin2, OUTPUT);
     pinMode(pin3, OUTPUT);
@@ -469,8 +613,6 @@ void setup()
 
     pinMode(trigPin2, OUTPUT); // Sets the trigPin as an OUTPUT
     pinMode(echoPin2, INPUT);  // Sets the echoPin as an INPUT
-    Serial.begin(
-        9600); // // Serial Communication is starting with 9600 of baudrate speed
     Serial.println(
         "Ultrasonic Sensor HC-SR04 Test"); // print some text in Serial Monitor
     Serial.println("with Arduino UNO R3");
@@ -479,6 +621,22 @@ void setup()
     Wire.write(0x6B);                 // PWR_MGMT_1 register
     Wire.write(0);                    // set to zero (wakes up the MPU-6050)
     Wire.endTransmission(true);
+    xTaskCreate(
+        Gyro_manager,
+        "Gyro_manager", // A name just for humans
+
+        128 // Stack size
+        ,
+        NULL, 2 // priority
+        ,
+        NULL);
+
+    xTaskCreate(
+        Servo_manager, "Servo_manager", 128 // This stack size can be checked & adjusted by reading Highwater
+        ,
+        NULL, 1 // priority
+        ,
+        NULL);
 }
 void loop()
 {
@@ -490,11 +648,11 @@ void loop()
             inputHandler(choice);
         }
     }
-    check_gy_sensor();
-    if (servo_Rotaion)
-    {
-        servoRotation();
-    }
+    // check_gy_sensor();
+    // if (servo_Rotaion)
+    // {
+    //     servoRotation();
+    // }
     // Clears the trigPin condition
     update_distance(false);
 
@@ -502,84 +660,84 @@ void loop()
     //  check_critical_distance();2
     temp_alrm_time = alarm_time;
 }
-void servoRotation()
-{
+// void servoRotation()
+// {
 
-    if (servo_Rotaion)
-    {
-        delay(300);
-    }
-    for (pos = 0; pos <= 180; pos++)
-    {
-        if (Serial.available() >= 1)
-        {
-            choice = Serial.parseInt();
-            if (choice >= 1)
-            {
-                inputHandler(choice);
-            }
-        }
+//     if (servo_Rotaion)
+//     {
+//         delay(300);
+//     }
+//     for (pos = 0; pos <= 180; pos++)
+//     {
+//         if (Serial.available() >= 1)
+//         {
+//             choice = Serial.parseInt();
+//             if (choice >= 1)
+//             {
+//                 inputHandler(choice);
+//             }
+//         }
 
-        Myservo.write(pos);
-        delay(rotation_speed_delay);
+//         Myservo.write(pos);
+//         delay(rotation_speed_delay);
 
-        if (pos % display_reading_after == 0)
-        {
-            blynk(20);
+//         if (pos % display_reading_after == 0)
+//         {
+//             blynk(20);
 
-            Serial.print("Angle : " + String(pos) + " -> ");
+//             Serial.print("Angle : " + String(pos) + " -> ");
 
-            update_distance(true);
-        }
-    }
+//             update_distance(true);
+//         }
+//     }
 
-    delay(300);
+//     delay(300);
 
-    for (pos = 180; pos >= 0; pos--)
-    {
-        if (Serial.available() >= 1)
-        {
-            choice = Serial.parseInt();
-            if (choice >= 1)
-            {
-                inputHandler(choice);
-            }
-        }
+//     for (pos = 180; pos >= 0; pos--)
+//     {
+//         if (Serial.available() >= 1)
+//         {
+//             choice = Serial.parseInt();
+//             if (choice >= 1)
+//             {
+//                 inputHandler(choice);
+//             }
+//         }
 
-        Myservo.write(pos);
-        delay(rotation_speed_delay);
+//         Myservo.write(pos);
+//         delay(rotation_speed_delay);
 
-        if (pos % display_reading_after == 0)
-        {
-            blynk(20);
+//         if (pos % display_reading_after == 0)
+//         {
+//             blynk(20);
 
-            Serial.print("Angle : " + String(pos) + " -> ");
+//             Serial.print("Angle : " + String(pos) + " -> ");
 
-            update_distance(true);
-        }
-    }
-    if (!ArraysInitialized)
-    {
-        ArraysInitialized = true;
-        Serial.println("data in array is");
+//             update_distance(true);
+//         }
+//     }
+//     if (!ArraysInitialized)
+//     {
+//         ArraysInitialized = true;
+//         Serial.println("data in array is");
 
-        int ijk = 0;
-        Serial.print("D1 : ");
-        for (; ijk < 18; ijk++)
-        {
-            Serial.print(String(d1[ijk]) + ",");
-        }
-        Serial.println("");
+//         int ijk = 0;
+//         Serial.print("D1 : ");
+//         for (; ijk < 18; ijk++)
+//         {
+//             Serial.print(String(d1[ijk]) + ",");
+//         }
+//         Serial.println("");
 
-        ijk = 0;
-        Serial.print("D2 : ");
-        for (; ijk < 18; ijk++)
-        {
-            Serial.print(String(d2[ijk]) + ",");
-        }
-        Serial.println("");
-    }
-}
+//         ijk = 0;
+//         Serial.print("D2 : ");
+//         for (; ijk < 18; ijk++)
+//         {
+//             Serial.print(String(d2[ijk]) + ",");
+//         }
+//         Serial.println("");
+//     }
+// }
 void update_distance(bool check)
 {
     digitalWrite(trigPin, LOW);
@@ -631,10 +789,12 @@ void check_warning_distance()
         for (; temp_alrm_time > 0; temp_alrm_time -= 200)
         {
             digitalWrite(warning_zone_Led, HIGH);
-            delay(100);
+            // delay(100);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
             check_critical_distance();
             digitalWrite(warning_zone_Led, LOW);
-            delay(100);
+            // delay(100);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
             check_critical_distance();
         }
     }
@@ -650,18 +810,22 @@ void beep()
         if (BuzzerBeeping)
         {
             digitalWrite(critical_zone_buzzer, HIGH);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
         }
         else
         {
             digitalWrite(warning_zone_Led, LOW);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
             digitalWrite(warning_zone_Led, HIGH);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
             temp_alrm_time -= 50;
         }
         digitalWrite(critical_zone_buzzer, LOW);
-        delay(50);
+        // delay(50);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     digitalWrite(warning_zone_Led, LOW);
 }
@@ -674,32 +838,38 @@ void custom_beep(int beep_for, int delay_bt_beep)
         if (BuzzerBeeping)
         {
             digitalWrite(critical_zone_buzzer, HIGH);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
         }
         else
         {
             digitalWrite(warning_zone_Led, LOW);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
             digitalWrite(warning_zone_Led, HIGH);
-            delay(50);
+            // delay(50);
+            vTaskDelay(50 / portTICK_PERIOD_MS);
             temp_alrm_time -= 50;
         }
         digitalWrite(critical_zone_buzzer, LOW);
-        delay(50);
+        // delay(50);
+        vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     digitalWrite(warning_zone_Led, LOW);
 }
 void blynk(int defined_delay)
 {
     digitalWrite(LED_BUILTIN,
-                 HIGH);             // turn the LED on (HIGH is the voltage level)
-    delay(defined_delay);           // wait for a second
+                 HIGH); // turn the LED on (HIGH is the voltage level)
+    // delay(defined_delay);           // wait for a second
+    vTaskDelay(defined_delay / portTICK_PERIOD_MS);
     digitalWrite(LED_BUILTIN, LOW); // turn the LED off by making the voltage LOW
     // delay(1000);
     if (warningLED)
     {
         digitalWrite(warning_zone_Led, HIGH);
-        delay(defined_delay);
+        // delay(defined_delay);
+        vTaskDelay(defined_delay / portTICK_PERIOD_MS);
         digitalWrite(warning_zone_Led, LOW);
     }
 }
@@ -714,7 +884,8 @@ String getString()
         // if (Serial.available() > 0)
         // {
         ch = Serial.read(); // get the character
-        delay(20);
+        // delay(20);
+        vTaskDelay(20 / portTICK_PERIOD_MS);
         if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
             (ch >= '0' && ch <= '9') || (ch == '='))
         {
@@ -730,7 +901,8 @@ String getString()
             // Serial.print("Sr we got ");
             // Serial.println(sdata);
             condit = false;
-            delay(100);
+            // delay(100);
+            vTaskDelay(100 / portTICK_PERIOD_MS);
             // FileNameLoop = sdata;
         }
         else if (ch == ',')
