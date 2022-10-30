@@ -17,9 +17,9 @@ bool ArraysInitialized = false;
 bool warningLED = true;
 bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-int d1[18];
-int d2[18];
-int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+int d1[19];
+int d2[19];
+int rotation_speed_delay = 50;  // angle (++ or --) after (rotation_speed)ms
 byte softMargin_ultraSound = 2; // x inches changes will be negliected
 // so increasing it will slow down rotation speed
 
@@ -60,9 +60,9 @@ byte warning_zone_Led = 6;
 int alarm_time = 2000;
 int temp_alrm_time = alarm_time;
 int display_reading_after = 10; //  (180/display_reading_after) = x,(18)
-                                 //  so after 10 degree readings will be printed
-#define echoPin 12               //  attach pin D2 Arduino to pin Echo of HC-SR04
-#define trigPin 11               // attach pin D3 Arduino to pin Trig of HC-SR04
+                                //  so after 10 degree readings will be printed
+#define echoPin 12              //  attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 11              // attach pin D3 Arduino to pin Trig of HC-SR04
 
 #define echoPin2 9  //  attach pin D2 Arduino to pin Echo of HC-SR04
 #define trigPin2 10 // attach pin D3 Arduino to pin Trig of HC-SR04
@@ -596,6 +596,7 @@ void loop()
 }
 void servoRotation()
 {
+    // Serial.println(F("ServoRotation called"));
 
     if (servo_Rotaion)
     {
@@ -619,14 +620,16 @@ void servoRotation()
         {
             blynk(20);
             check_gy_sensor(false);
+            // Serial.println(F("gyro out"));
 
             Serial.print("Angle : " + String(pos) + " -> ");
 
             update_distance(true);
+            // Serial.println(F("update_distance out"));
         }
     }
-
-    delay(100);
+    // Serial.println(F("ServoRotation 180 out"));
+    delay(200);
 
     for (pos = 180; pos >= 0 && servo_Rotaion; pos--)
     {
