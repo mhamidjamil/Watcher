@@ -12,13 +12,13 @@ byte AlertStatus = 4;
 // * servo start ------------------------------
 #include <Servo.h>
 Servo Myservo;
-byte pos;
+int pos;
 bool ArraysInitialized = false;
 bool warningLED = true;
-byte BuzzerBeeping = 0;
+bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-byte d1[19];
-byte d2[19];
+int d1[19];
+int d2[19];
 byte rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
 byte softMargin_ultraSound = 2; // x inches changes will be negliected
 // so increasing it will slow down rotation speed
@@ -40,8 +40,8 @@ void check_gy_sensor(bool print_records);
 void inputHandler(int choice);
 void servoRotation();
 void update_distance(bool check);
-void check_critical_distance();
-void check_warning_distance();
+// void check_critical_distance();
+// void check_warning_distance();
 void beep();
 void custom_beep(int beep_for, int delay_bt_beep);
 void blynk(int defined_delay);
@@ -222,21 +222,31 @@ void sendRFmsg(int msgCode)
     if (msgCode == 1)
     {
         BinaryManager(msgCode);
-        Serial.println("Gyro detected movment msg sent");
+        Serial.println("Gyro detected movment, msg sent");
     }
     else if (msgCode == 2)
     {
         BinaryManager(msgCode);
-        Serial.println("Ultrasonic detected movment msg sent");
+        Serial.println("ultra sound sensor (1) detected movment, msg sent");
     }
     else if (msgCode == 3)
     {
         BinaryManager(msgCode);
-        Serial.println("Both detected movment msg sent");
+        Serial.println("ultra sound sensor (2) detected movment, msg sent");
+    }
+    else if (msgCode == 4)
+    {
+        BinaryManager(msgCode);
+        Serial.println("Both ultra sound sensors detected movment, msg sent");
+    }
+    else if (msgCode == 5)
+    {
+        BinaryManager(msgCode);
+        Serial.println("Both detected movment, msg sent");
     }
     else
     {
-        Serial.println("Invalid msg code! (sendRFmsg error)");
+        Serial.println("msg code not defined");
     }
 }
 // ` RF reciver config end --------------------
@@ -289,9 +299,7 @@ void check_gy_sensor(bool print_records)
     mainX = accelerometer_x;
     mainY = accelerometer_y;
     mainZ = accelerometer_z;
-    if (!((change_Detector(mainX, global_X, softMargin)) ||
-          (change_Detector(mainY, global_Y, softMargin)) ||
-          (change_Detector(mainZ, global_Z, softMargin))))
+    if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin)) || (change_Detector(mainZ, global_Z, softMargin))))
     {
         global_X = mainX;
         global_Y = mainY;
@@ -312,8 +320,11 @@ void check_gy_sensor(bool print_records)
         }
         else if (gy_beep == 1)
         {
-            custom_beep(2000, 200);
-            sendRFmsg(1);
+            if (AlertStatus > 3)
+            {
+                custom_beep(2000, 200);
+                sendRFmsg(1);
+            }
             Serial.println("#######################");
             gy_beep--;
         }
@@ -361,11 +372,30 @@ void inputHandler(int choice)
         // }
         else if (choice == 5)
         {
-            choise_handler(&rotation_speed_delay);
+            int tempvar_ = rotation_speed_delay;
+            choise_handler(&tempvar_);
+            rotation_speed_delay = tempvar_;
         }
         else if (choice == 6)
         {
-            choise_handler(&BuzzerBeeping);
+            if (BuzzerBeeping)
+            {
+                choice = 1
+            }
+            else
+            {
+                choice = 0;
+            }
+            choise_handler(&choice);
+            if (choice == 1)
+            {
+                BuzzerBeeping = true;
+            }
+            else
+            {
+                BuzzerBeeping = false;
+            }
+            // BuzzerBeeping = tempvar_;
         }
         else if (choice == 7)
         {
@@ -674,42 +704,65 @@ void update_distance(bool check)
     }
     else if (ArraysInitialized && check && servo_Rotaion)
     {
-        if (d1[pos / display_reading_after] != (distance / 2.54) || d2[pos / display_reading_after] != (distance2 / 2.54))
+        if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)) || (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
         {
-            Serial.println("Data mismatch");
-            Serial.println("Angle : " + String(pos));
-            Serial.println("D1 : " + String(d1[pos / display_reading_after]) + ", D2 : " + String(d2[pos / display_reading_after]));
-            Serial.println("D1 : " + String(distance / 2.54) + ", D2 : " + String(distance2 / 2.54));
+            int msg_code = 0;
+            Serial.println("ultra sound change detected");
+            if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)))
+            {
+                Serial.println("ultra sound change detected on D1");
+                d1[pos / display_reading_after] = (distance / 2.54);
+                msg_code += 5;
+            }
+            if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
+            {
+                Serial.println("ultra sound change detected on D2");
+                d2[pos / display_reading_after] = (distance2 / 2.54);
+                msg_code += 10;
+            }
+
+            if (msg_code == 5)
+            {
+                sendRFmsg(2);
+            }
+            else if (msg_code == 10)
+            {
+                sendRFmsg(3);
+            }
+            else if (msg_code == 15)
+            {
+                sendRFmsg(4);
+            }
         }
     }
 }
-void check_critical_distance()
-{
-    update_distance(false);
-    if ((distance / 2.54) < critical_zone)
-    {
-        Serial.print("Critical distance");
-        beep();
-    }
-}
-void check_warning_distance()
-{
-    update_distance(false);
-    if ((distance / 2.54) < warning_zone)
-    {
-        Serial.print("warning distance");
-        // int temp_alrm_time = warn_for;
-        for (; temp_alrm_time > 0; temp_alrm_time -= 200)
-        {
-            digitalWrite(warning_zone_Led, HIGH);
-            delay(100);
-            check_critical_distance();
-            digitalWrite(warning_zone_Led, LOW);
-            delay(100);
-            check_critical_distance();
-        }
-    }
-}
+// void check_critical_distance()
+// {
+//     update_distance(false);
+//     if ((distance / 2.54) < critical_zone)
+//     {
+//         Serial.print("Critical distance");
+//         beep();
+//     }
+// }
+// void check_warning_distance()
+// {
+//     update_distance(false);
+//     if ((distance / 2.54) < warning_zone)
+//     {
+//         Serial.print("warning distance");
+//         // int temp_alrm_time = warn_for;
+//         for (; temp_alrm_time > 0; temp_alrm_time -= 200)
+//         {
+//             digitalWrite(warning_zone_Led, HIGH);
+//             delay(100);
+//             check_critical_distance();
+//             digitalWrite(warning_zone_Led, LOW);
+//             delay(100);
+//             check_critical_distance();
+//         }
+//     }
+// }
 void beep()
 {
     //   int temp_alrm_time = beep_for;
@@ -785,8 +838,7 @@ String getString()
         // {
         ch = Serial.read(); // get the character
         delay(20);
-        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-            (ch >= '0' && ch <= '9') || (ch == '='))
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || (ch == '='))
         {
             sdata += ch;
         }
