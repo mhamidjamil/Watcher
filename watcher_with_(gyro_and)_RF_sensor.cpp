@@ -1,17 +1,26 @@
 // ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
 //$ 2:24 AM 30/NOV/22
+byte AlertStatus = 4;
+//  Alert Status = 1: Alert when d1's value changes
+//  Alert Status = 2: Alert when d2's value changes
+//  Alert Status = 3: Alert when d1's or d2's value changes
+//  Alert Status = 4: Alert when Gyro and d1's or d2's value changes
+//  Alert Status = 5: Alert when Gyro value changes
+//  Alert Status = 6: Alert when Gyro and d1's value changes
+//  Alert Status = 7: Alert when Gyro and d2's value changes
+
 // * servo start ------------------------------
 #include <Servo.h>
 Servo Myservo;
-int pos;
+byte pos;
 bool ArraysInitialized = false;
 bool warningLED = true;
-int BuzzerBeeping = 0;
+byte BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-int d1[19];
-int d2[19];
-
-int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+byte d1[19];
+byte d2[19];
+byte rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+byte softMargin_ultraSound = 2; // x inches changes will be negliected
 // so increasing it will slow down rotation speed
 
 // * servo end --------------------------------
@@ -38,6 +47,7 @@ void custom_beep(int beep_for, int delay_bt_beep);
 void blynk(int defined_delay);
 String getString();
 void choise_handler(int *p);
+bool change_Detector(int value_to_be_compare, int previous_value, int margin);
 // # 20+ functions Defined =====================================
 
 //  + Ultrasound start  -------------------------------------
@@ -279,9 +289,9 @@ void check_gy_sensor(bool print_records)
     mainX = accelerometer_x;
     mainY = accelerometer_y;
     mainZ = accelerometer_z;
-    if (!(((global_X >= mainX - softMargin) && (global_X <= mainX + softMargin)) ||
-          ((global_Y >= mainY - softMargin) && (global_Y <= mainY + softMargin)) ||
-          ((global_Z >= mainZ - softMargin) && (global_Z <= mainZ + softMargin))))
+    if (!((change_Detector(mainX, global_X, softMargin)) ||
+          (change_Detector(mainY, global_Y, softMargin)) ||
+          (change_Detector(mainZ, global_Z, softMargin))))
     {
         global_X = mainX;
         global_Y = mainY;
@@ -488,7 +498,17 @@ void inputHandler(int choice)
     choice = 0;
     Serial.println("Handler out");
 }
-
+bool change_Detector(int value_to_be_compare, int previous_value, int margin)
+{
+    if ((value_to_be_compare >= previous_value - margin) && (value_to_be_compare <= previous_value + margin))
+    {
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
 void setup()
 {
     pinMode(pin1, OUTPUT);
@@ -620,9 +640,6 @@ void servoRotation()
         }
         Serial.println("");
     }
-    // else if (ArraysInitialized)
-    // {
-    // }
 }
 void update_distance(bool check)
 {
@@ -654,6 +671,16 @@ void update_distance(bool check)
         // Serial.println(", index : " + String(pos / display_reading_after));
         d1[pos / display_reading_after] = (distance / 2.54);
         d2[pos / display_reading_after] = (distance2 / 2.54);
+    }
+    else if (ArraysInitialized && check && servo_Rotaion)
+    {
+        if (d1[pos / display_reading_after] != (distance / 2.54) || d2[pos / display_reading_after] != (distance2 / 2.54))
+        {
+            Serial.println("Data mismatch");
+            Serial.println("Angle : " + String(pos));
+            Serial.println("D1 : " + String(d1[pos / display_reading_after]) + ", D2 : " + String(d2[pos / display_reading_after]));
+            Serial.println("D1 : " + String(distance / 2.54) + ", D2 : " + String(distance2 / 2.54));
+        }
     }
 }
 void check_critical_distance()
