@@ -19,7 +19,7 @@ bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
 int d1[18];
 int d2[18];
-byte rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
 byte softMargin_ultraSound = 2; // x inches changes will be negliected
 // so increasing it will slow down rotation speed
 
@@ -59,7 +59,7 @@ byte warning_zone_Led = 6;
 
 int alarm_time = 2000;
 int temp_alrm_time = alarm_time;
-byte display_reading_after = 10; //  (180/display_reading_after) = x,(18)
+int display_reading_after = 10; //  (180/display_reading_after) = x,(18)
                                  //  so after 10 degree readings will be printed
 #define echoPin 12               //  attach pin D2 Arduino to pin Echo of HC-SR04
 #define trigPin 11               // attach pin D3 Arduino to pin Trig of HC-SR04
@@ -376,9 +376,9 @@ void inputHandler(int choice)
         // }
         else if (choice == 5)
         {
-            choice = rotation_speed_delay;
-            choise_handler(&choice);
-            rotation_speed_delay = choice;
+            // choice = rotation_speed_delay;
+            choise_handler(&rotation_speed_delay);
+            // rotation_speed_delay = choice;
         }
         else if (choice == 6)
         {
