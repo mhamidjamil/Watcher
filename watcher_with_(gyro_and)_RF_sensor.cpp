@@ -1,5 +1,5 @@
 // ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
-//$ 2:24 AM 30/NOV/22
+//$ 11:10 PM 30/NOV/22
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes
 //  Alert Status = 2: Alert when d2's value changes
@@ -115,7 +115,7 @@ void offOuput()
 }
 void deciaml_to_binary(int inpt)
 {
-    Serial.println("deciaml_to_binary : " + String(inpt));
+    // Serial.println("deciaml_to_binary : " + String(inpt));
     int out1 = inpt % 2;
     int out2 = 0;
     int out3 = 0;
@@ -148,7 +148,7 @@ void deciaml_to_binary(int inpt)
     {
         out2 = 1;
     }
-    Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
+    // Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ", " + String(out2) + ", " + String(out1));
     delay(defaultDelay);
     SwitchInverter(out4, out3, out2, out1, true);
     offOuput();
@@ -206,7 +206,7 @@ void TestStream(int delay_)
 }
 void BinaryManager(int number)
 {
-    Serial.println("Binary manager got : " + String(number));
+    // Serial.println("Binary manager got : " + String(number));
     for (; number >= 15; number -= 15)
     {
         SwitchInverter(1, 1, 1, 1, true);
@@ -707,26 +707,32 @@ void update_distance(bool check)
         // Serial.println(", index : " + String(pos / display_reading_after));
         d1[pos / display_reading_after] = (distance / 2.54);
         d2[pos / display_reading_after] = (distance2 / 2.54);
+        Serial
     }
     else if (ArraysInitialized && check && servo_Rotaion)
     {
         if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)) || (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
         {
             int msg_code = 0;
-            Serial.println(F("ultra sound change detected"));
+            // Serial.println(F("ultra sound change detected"));
             if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)))
             {
-                Serial.println(F("ultra sound change detected on D1"));
+                // Serial.println(F("ultra sound change detected on D1"));
+                Serial.print("#->(" + String(pos) + ")->");
+                Serial.print("previous value : " + String(d1[pos / display_reading_after]));
+                Serial.println(" current value : " + String(distance / 2.54));
                 d1[pos / display_reading_after] = (distance / 2.54);
                 msg_code += 5;
             }
             if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
             {
-                Serial.println(F("ultra sound change detected on D2"));
+                // Serial.println(F("ultra sound change detected on D2"));
+                Serial.print("##->(" + String(pos) + ")->");
+                Serial.print("previous value : " + String(d2[pos / display_reading_after]));
+                Serial.println(" current value : " + String(distance2 / 2.54));
                 d2[pos / display_reading_after] = (distance2 / 2.54);
                 msg_code += 10;
             }
-
             if (msg_code == 5)
             {
                 sendRFmsg((byte)2);
