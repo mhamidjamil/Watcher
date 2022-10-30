@@ -8,7 +8,6 @@ int globPin3Value = 0;
 int globPin4Value = 0;
 
 #include <ESP8266WiFi.h>
-#include "secrets.h"
 #include "ThingSpeak.h" // always include thingspeak header file after other header files and custom macros
 
 // ~
@@ -25,7 +24,6 @@ WiFiClient client;
 
 unsigned long myChannelNumber = SECRET_CH_ID;
 
-int number = 0;
 
 void setup()
 {
@@ -143,14 +141,10 @@ void dataUploader(int msg)
     else
     {
         Serial.println("Problem updating channel. HTTP error code " + String(x));
+        delay(3000);
+        dataUploader(msg);
     }
 
-    // change the value
-    number++;
-    if (number > 99)
-    {
-        number = 0;
-    }
 }
 void loop()
 {

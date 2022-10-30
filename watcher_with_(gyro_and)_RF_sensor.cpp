@@ -10,6 +10,10 @@ int BuzzerBeeping = 0;
 bool servo_Rotaion = true;
 int d1[19];
 int d2[19];
+
+int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+// so increasing it will slow down rotation speed
+
 // * servo end --------------------------------
 int choice = 0;
 // int input_timeout = 10000;
@@ -39,9 +43,6 @@ void choise_handler(int *p);
 //  + Ultrasound start  -------------------------------------
 int critical_zone = 25;
 int critical_zone_buzzer = 4;
-
-int rotation_speed_delay = 30; // angle (++ or --) after (rotation_speed)ms
-// so increasing it will slow down rotation speed
 
 int warning_zone = 50;
 int warning_zone_Led = 6;
@@ -240,7 +241,7 @@ int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for acce
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0, mainZ = 0;
-int softMargin = 150, global_X = 0, global_Y = 0, global_Z = 0;
+int softMargin = 250, global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(int16_t i)
 { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
@@ -545,7 +546,7 @@ void servoRotation()
 
     if (servo_Rotaion)
     {
-        delay(300);
+        delay(100);
     }
     for (pos = 0; pos <= 180 && servo_Rotaion; pos++)
     {
@@ -560,11 +561,11 @@ void servoRotation()
         }
         Myservo.write(pos);
         delay(rotation_speed_delay);
-        check_gy_sensor(false);
 
         if (pos % display_reading_after == 0)
         {
             blynk(20);
+            check_gy_sensor(false);
 
             Serial.print("Angle : " + String(pos) + " -> ");
 
@@ -572,7 +573,7 @@ void servoRotation()
         }
     }
 
-    delay(300);
+    delay(100);
 
     for (pos = 180; pos >= 0 && servo_Rotaion; pos--)
     {
@@ -587,11 +588,11 @@ void servoRotation()
 
         Myservo.write(pos);
         delay(rotation_speed_delay);
-        check_gy_sensor(false);
 
         if (pos % display_reading_after == 0)
         {
             blynk(20);
+            check_gy_sensor(false);
 
             Serial.print("Angle : " + String(pos) + " -> ");
 
@@ -619,6 +620,9 @@ void servoRotation()
         }
         Serial.println("");
     }
+    // else if (ArraysInitialized)
+    // {
+    // }
 }
 void update_distance(bool check)
 {
