@@ -8,7 +8,7 @@ byte AlertStatus = 4;
 //  Alert Status = 5: Alert when Gyro value changes
 //  Alert Status = 6: Alert when Gyro and d1's value changes
 //  Alert Status = 7: Alert when Gyro and d2's value changes
-
+// Alert Status = 8: No Alerts
 // * servo start ------------------------------
 #include <Servo.h>
 Servo Myservo;
@@ -253,6 +253,7 @@ void sendRFmsg(byte msgCode)
 
 //~ gyro start ***************************
 
+bool gyro_monitor = true;
 #include "Wire.h" // This library allows you to communicate with I2C devices.
 
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
@@ -417,6 +418,8 @@ void inputHandler(int choice)
         Serial.println(F("Enter 1 for LED  "));
         Serial.println(F("Enter 2 for Buzzer "));
         Serial.println(F("Enter 3 for Servo operations "));
+        Serial.println(F("Enter 4 for Gyro operations "));
+        Serial.println(F("Enter 5 for Alert status "));
         choice = getString().toInt();
         if (choice == 1)
         {
@@ -480,6 +483,45 @@ void inputHandler(int choice)
                 servo_Rotaion = true;
                 Serial.println(F("servo_Rotaion = true"));
             }
+        }
+        else if (choice == 4)
+        {
+            Serial.println(F("Enter 1 to stop gyro"));
+            Serial.println(F("Enter 2 to Start gyro"));
+            choice = getString().toInt();
+            if (choice == 1)
+            {
+                gyro_monitor = false;
+                Serial.println(F("gyro = false"));
+            }
+            else if (choice == 2)
+            {
+                gyro_monitor = true;
+                Serial.println(F("gyro = true"));
+            }
+        }
+        else if (choice == 5)
+        {
+            //  Alert Status = 1: Alert when d1's value changes
+            //  Alert Status = 2: Alert when d2's value changes
+            //  Alert Status = 3: Alert when d1's or d2's value changes
+            //  Alert Status = 4: Alert when Gyro and d1's or d2's value changes
+            //  Alert Status = 5: Alert when Gyro value changes
+            //  Alert Status = 6: Alert when Gyro and d1's value changes
+            //  Alert Status = 7: Alert when Gyro and d2's value changes
+            // Alert Status = 8: No Alerts
+            Serial.println(F("Enter New value : "));
+            Serial.println(F("Alert when d1's value changes"));
+            Serial.println(F("Alert when d2's value changes"));
+            Serial.println(F("Alert when d1's or d2's value changes"));
+            Serial.println(F("Alert when Gyro and d1's or d2's value changes"));
+            Serial.println(F("Alert when Gyro value changes"));
+            Serial.println(F("Alert when Gyro and d1's value changes"));
+            Serial.println(F("Alert when Gyro and d2's value changes"));
+            Serial.println(F("No Alerts"));
+            
+            AlertStatus = getString().toInt();
+            
         }
     }
     else if (choice == 3)
@@ -619,7 +661,10 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            check_gy_sensor(false);
+            if (gyro_monitor)
+            {
+                check_gy_sensor(false);
+            }
             // Serial.println(F("gyro out"));
 
             Serial.print("Angle : " + String(pos) + " -> ");
@@ -648,7 +693,10 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            check_gy_sensor(false);
+            if (gyro_monitor)
+            {
+                check_gy_sensor(false);
+            }
 
             Serial.print("Angle : " + String(pos) + " -> ");
 
@@ -707,9 +755,8 @@ void update_distance(bool check)
         // Serial.println(", index : " + String(pos / display_reading_after));
         d1[pos / display_reading_after] = (distance / 2.54);
         d2[pos / display_reading_after] = (distance2 / 2.54);
-        Serial
     }
-    else if (ArraysInitialized && check && servo_Rotaion)
+    else if (ArraysInitialized && check && servo_Rotaion && (AlertStatus != 8 && AlertStatus != 5))
     {
         if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)) || (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
         {
