@@ -1,5 +1,6 @@
-// ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
-//$ Last Update : 08:38 PM 01/DEC/22  (-> Confidence level ~ 60%)
+// ! Servo (ultra sound) work need some time. (we are close enough to finish this work :)  )
+// ! RF msg delivery want some time
+//$ Last Update : 08:38 PM 01/DEC/22  (-> Confidence level ~ 70%)
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes (only)
 //  Alert Status = 2: Alert when d2's value changes (only)
@@ -21,18 +22,18 @@ bool servo_Rotaion = true;
 #define array_size ((180 / display_reading_after) + 1)
 int d1[array_size];
 int d2[array_size];
-int rotation_speed_delay = 50;    // angle (++ or --) after (rotation_speed)ms
-byte softMargin_ultraSound = 2;   // x inches changes will be negliected
-#define defaulter_array_columns 5 // take angle number
-#define default_array_rows 2      // have angle number across with votes of curruptions
-int default_array[defaulter_array_columns][default_array_rows] = {
-    {0, 0},
-    {0, 0},
-    {0, 0},
-    {0, 0},
-    {0, 0}};
+int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
 // so increasing it will slow down rotation speed
-int angle_Inquiry(int angle);
+byte softMargin_ultraSound = 4;   // x inches changes will be negliected
+#define defaulter_array_columns 5 // take angle number
+#define default_array_rows 3      // Angle number, module number and votes of curruptions
+int default_array[defaulter_array_columns][default_array_rows] = {
+    {0, 0, 0},  // 0
+    {0, 0, 0},  // 1
+    {0, 0, 0},  // 2
+    {0, 0, 0},  // 3
+    {0, 0, 0}}; // 4
+int angle_Inquiry(int angle, int sensor, int newDistance, int previousDistance);
 // * servo end --------------------------------
 int choice = 0;
 // int input_timeout = 10000;
@@ -45,7 +46,7 @@ void deciaml_to_binary(int number);
 void SwitchInverter(int a, int b, int c, int d, bool status);
 void TestStream(int delay_);
 void BinaryManager(int number);
-void sendRFmsg(bool msgCode);
+void sendRFmsg(int msgCode);
 void check_gy_sensor(bool print_records);
 void inputHandler(int choice);
 void servoRotation();
@@ -224,7 +225,7 @@ void BinaryManager(int number)
     }
     deciaml_to_binary(number);
 }
-void sendRFmsg(byte msgCode)
+void sendRFmsg(int msgCode)
 {
     // 1 for movment detected by GYRO
     // 2 for movment detected by ULTRASOUND
@@ -272,7 +273,7 @@ int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for acce
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0, mainZ = 0;
-int softMargin = 250, global_X = 0, global_Y = 0, global_Z = 0;
+int softMargin = 300, global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(int16_t i)
 { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
@@ -310,7 +311,8 @@ void check_gy_sensor(bool print_records)
     mainX = accelerometer_x;
     mainY = accelerometer_y;
     mainZ = accelerometer_z;
-    if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin)) || (change_Detector(mainZ, global_Z, softMargin))))
+    // if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin)) || (change_Detector(mainZ, global_Z, softMargin))))
+    if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin))))
     {
         global_X = mainX;
         global_Y = mainY;
@@ -334,7 +336,7 @@ void check_gy_sensor(bool print_records)
             if (AlertStatus > 3)
             {
                 custom_beep(2000, 200);
-                sendRFmsg((byte)1);
+                sendRFmsg(1);
             }
             Serial.println(F("#######################"));
             gy_beep--;
@@ -500,7 +502,7 @@ void inputHandler(int choice)
                 choice = getString().toInt();
                 Serial.println(F("For how long : "));
                 int delay_temp = getString().toInt();
-                servo.write(choice);
+                Myservo.write(choice);
                 delay(delay_temp);
             }
         }
@@ -680,7 +682,7 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            if (gyro_monitoring)
+            if (gyro_monitoring && ArraysInitialized)
             {
                 check_gy_sensor(false);
             }
@@ -712,7 +714,7 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            if (gyro_monitoring)
+            if (gyro_monitoring && ArraysInitialized)
             {
                 check_gy_sensor(false);
             }
@@ -729,7 +731,7 @@ void servoRotation()
 
         int ijk = 0;
         Serial.print("D1 : ");
-        for (; ijk < 18; ijk++)
+        for (; ijk < sizeof(d1) / sizeof(int); ijk++)
         {
             Serial.print(String(d1[ijk]) + ",");
         }
@@ -737,7 +739,7 @@ void servoRotation()
 
         ijk = 0;
         Serial.print("D2 : ");
-        for (; ijk < 18; ijk++)
+        for (; ijk < sizeof(d2) / sizeof(int); ijk++)
         {
             Serial.print(String(d2[ijk]) + ",");
         }
@@ -787,7 +789,7 @@ void update_distance(bool check)
                 Serial.print("#->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d1[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance / 2.54));
-                if (angle_Inquiry(pos, 1) >= 2)
+                if (angle_Inquiry(pos, 1, (distance / 2.54), (d1[pos / display_reading_after])) >= 10)
                 {
                     Serial.println(F("( @ Alert ignored #defaulter)"));
                     msg_code = 420;
@@ -795,8 +797,8 @@ void update_distance(bool check)
                 else
                 {
                     msg_code += 5;
-                    d1[pos / display_reading_after] = (distance / 2.54);
                 }
+                d1[pos / display_reading_after] = (distance / 2.54);
             }
             if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)) && (AlertStatus != 1 || AlertStatus != 6))
             {
@@ -804,31 +806,31 @@ void update_distance(bool check)
                 Serial.print("##->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d2[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance2 / 2.54));
-                if (angle_Inquiry(pos, 2) >= 2)
+                if (angle_Inquiry(pos, 2, (distance2 / 2.54), (d2[pos / display_reading_after])) >= 10)
                 {
                     Serial.println(F("( @ Alert ignored #defaulter)"));
                     msg_code = 420;
                 }
                 else
                 {
-                    d2[pos / display_reading_after] = (distance2 / 2.54);
                     msg_code += 10;
                 }
+                d2[pos / display_reading_after] = (distance2 / 2.54);
             }
             if (msg_code != 420 && (AlertStatus != 1 || AlertStatus != 6 || AlertStatus != 2 || AlertStatus != 7))
             {
                 if (msg_code == 5)
                 {
-                    sendRFmsg((byte)2);
+                    sendRFmsg(2);
                 }
                 else if (msg_code == 10)
                 {
-                    sendRFmsg((byte)3);
+                    sendRFmsg(3);
                 }
                 else if (msg_code == 15)
                 {
                 }
-                sendRFmsg((byte)4);
+                sendRFmsg(4);
             }
         }
     }
@@ -973,4 +975,65 @@ void choise_handler(int *p)
     *p = newvalue;
     Serial.println(String(*p));
     // Serial.println("new value : " + String(*p));
+}
+int angle_Inquiry(int angle, int sensor, int newDistance, int previousDistance)
+{
+    for (int i = 0; i < defaulter_array_columns; i++)
+    {
+        if (default_array[i][0] == angle && default_array[i][1] == sensor)
+        {
+            if (default_array[i][2] < 100)
+            {
+                return (default_array[i][2]++);
+            }
+            else
+            {
+                return default_array[i][2];
+            }
+        }
+        else if (default_array[i][0] == 0)
+        {
+            if ((newDistance >= 460 || previousDistance >= 460) && ((abs(previousDistance - newDistance)) > 250))
+            {
+                default_array[i][0] = angle;
+                default_array[i][1] = sensor;
+                default_array[i][2] = 20;
+                return (default_array[i][2]);
+            }
+            else
+            {
+                default_array[i][0] = angle;
+                default_array[i][1] = sensor;
+                return (default_array[i][2]++);
+            }
+        }
+    } // in case if array is full
+    int j = 0;
+    for (int k = 1; k < defaulter_array_columns; k++)
+    { // find the array who has less vote so can be replaced
+        if (default_array[j][2] < default_array[k][2])
+        {
+            if (default_array[k][2] < 30)
+            {
+                j = k;
+            }
+            else
+            {
+                Serial.println(" Error code #1k+ ");
+            }
+        }
+    }
+    if ((newDistance >= 460 || previousDistance >= 460) && ((abs(previousDistance - newDistance)) > 250))
+    {
+        default_array[j][0] = angle;
+        default_array[j][1] = sensor;
+        default_array[j][2] = 20;
+        return (default_array[j][2]);
+    }
+    else
+    {
+        default_array[j][0] = angle;
+        default_array[j][1] = sensor;
+        return (default_array[j][2]++);
+    }
 }
