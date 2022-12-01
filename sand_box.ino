@@ -1,13 +1,13 @@
 // ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
-//$ 11:10 PM 30/NOV/22
+//$ Last Update : 08:38 PM 01/DEC/22  (-> Confidence level ~ 60%)
 byte AlertStatus = 4;
-//  Alert Status = 1: Alert when d1's value changes
-//  Alert Status = 2: Alert when d2's value changes
+//  Alert Status = 1: Alert when d1's value changes (only)
+//  Alert Status = 2: Alert when d2's value changes (only)
 //  Alert Status = 3: Alert when d1's or d2's value changes
 //  Alert Status = 4: Alert when Gyro and d1's or d2's value changes
-//  Alert Status = 5: Alert when Gyro value changes
-//  Alert Status = 6: Alert when Gyro and d1's value changes
-//  Alert Status = 7: Alert when Gyro and d2's value changes
+//  Alert Status = 5: Alert when Gyro value changes (only)
+//  Alert Status = 6: Alert when Gyro and d1's value changes (only)
+//  Alert Status = 7: Alert when Gyro and d2's value changes (only)
 // Alert Status = 8: No Alerts
 // * servo start ------------------------------
 #include <Servo.h>
@@ -17,14 +17,22 @@ bool ArraysInitialized = false;
 bool warningLED = true;
 bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-#define display_reading_after  18//  (180/display_reading_after) = x,(10)
-#define array_size  ((180 / display_reading_after) + 1)
+#define display_reading_after 18 //  (180/display_reading_after) = x,(10)
+#define array_size ((180 / display_reading_after) + 1)
 int d1[array_size];
 int d2[array_size];
-int rotation_speed_delay = 50;  // angle (++ or --) after (rotation_speed)ms
-byte softMargin_ultraSound = 2; // x inches changes will be negliected
+int rotation_speed_delay = 50;    // angle (++ or --) after (rotation_speed)ms
+byte softMargin_ultraSound = 2;   // x inches changes will be negliected
+#define defaulter_array_columns 5 // take angle number
+#define default_array_rows 2      // have angle number across with votes of curruptions
+int default_array[defaulter_array_columns][default_array_rows] = {
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0},
+    {0, 0}};
 // so increasing it will slow down rotation speed
-
+int angle_Inquiry(int angle);
 // * servo end --------------------------------
 int choice = 0;
 // int input_timeout = 10000;
@@ -339,8 +347,8 @@ void inputHandler(int choice)
     Serial.println(F("input Handler call"));
     // choice = Serial.parseInt();
     // choice = getString().toInt();
-    if (choice == 1)
-    { // to set new values of variables
+    if (choice == 1) // variables values manager
+    {                // to set new values of variables
         Serial.println(F("Changing setting...."));
         Serial.println(F("Avaiable variable to change : "));
         Serial.println("1: critical_zone ," + String(critical_zone));
@@ -414,7 +422,7 @@ void inputHandler(int choice)
         //   choice = getint();
         // }
     }
-    else if (choice == 2)
+    else if (choice == 2) // Features manager
     {
         Serial.println(F("Direct call..."));
         Serial.println(F("Enter 1 for LED  "));
@@ -423,7 +431,7 @@ void inputHandler(int choice)
         Serial.println(F("Enter 4 for Gyro operations "));
         Serial.println(F("Enter 5 for Alert status "));
         choice = getString().toInt();
-        if (choice == 1)
+        if (choice == 1) // LED manager
         {
             Serial.println(F("Enter 1 enable warning led blynk "));
             Serial.println(F("Enter 2 disable warning led blynk "));
@@ -447,7 +455,7 @@ void inputHandler(int choice)
                 digitalWrite(warning_zone_Led, LOW);
             }
         }
-        else if (choice == 2)
+        else if (choice == 2) // Buzzer manager
         {
             Serial.println(F("Enter 1 to Turn Buzzer on "));
             Serial.println(F("Enter 2 to turn onbeeping  "));
@@ -470,10 +478,11 @@ void inputHandler(int choice)
                 BuzzerBeeping = false;
             }
         }
-        else if (choice == 3)
+        else if (choice == 3) // Servo Rotation Manager
         {
             Serial.println(F("Enter 1 to stop servo_Rotaion"));
             Serial.println(F("Enter 2 to Start servo_Rotaion"));
+            Serial.println(F("Enter 3 to move servo to specific angle"));
             choice = getString().toInt();
             if (choice == 1)
             {
@@ -485,8 +494,17 @@ void inputHandler(int choice)
                 servo_Rotaion = true;
                 Serial.println(F("servo_Rotaion = true"));
             }
+            else if (choice == 3)
+            {
+                Serial.println(F("Enter angle to move servo to : "));
+                choice = getString().toInt();
+                Serial.println(F("For how long : "));
+                int delay_temp = getString().toInt();
+                servo.write(choice);
+                delay(delay_temp);
+            }
         }
-        else if (choice == 4)
+        else if (choice == 4) // Gyro Manager
         {
             Serial.println(F("Enter 1 to stop gyro"));
             Serial.println(F("Enter 2 to Start gyro"));
@@ -502,7 +520,7 @@ void inputHandler(int choice)
                 Serial.println(F("gyro = true"));
             }
         }
-        else if (choice == 5)
+        else if (choice == 5) // Alert scheme manager
         {
             //  Alert Status = 1: Alert when d1's value changes
             //  Alert Status = 2: Alert when d2's value changes
@@ -513,11 +531,11 @@ void inputHandler(int choice)
             //  Alert Status = 7: Alert when Gyro and d2's value changes
             // Alert Status = 8: No Alerts
             Serial.println(F("Enter New value : "));
-            Serial.println(F("Alert when d1's value changes"));
-            Serial.println(F("Alert when d2's value changes"));
-            Serial.println(F("Alert when d1's or d2's value changes"));
+            Serial.println(F("Alert when d1's value changes (only)"));
+            Serial.println(F("Alert when d2's value changes (only)"));
+            Serial.println(F("Alert when d1's or d2's value changes (only)"));
             Serial.println(F("Alert when Gyro and d1's or d2's value changes"));
-            Serial.println(F("Alert when Gyro value changes"));
+            Serial.println(F("Alert when Gyro value changes (only)"));
             Serial.println(F("Alert when Gyro and d1's value changes"));
             Serial.println(F("Alert when Gyro and d2's value changes"));
             Serial.println(F("No Alerts"));
@@ -525,7 +543,7 @@ void inputHandler(int choice)
             AlertStatus = getString().toInt();
         }
     }
-    else if (choice == 3)
+    else if (choice == 3) // RF manager
     {
         // RF module
         Serial.println(F("Enter 1 to Force pin high/low"));
@@ -763,34 +781,53 @@ void update_distance(bool check)
         {
             int msg_code = 0;
             // Serial.println(F("ultra sound change detected"));
-            if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)))
+            if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)) && (AlertStatus != 2 || AlertStatus != 7))
             {
                 // Serial.println(F("ultra sound change detected on D1"));
                 Serial.print("#->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d1[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance / 2.54));
-                d1[pos / display_reading_after] = (distance / 2.54);
-                msg_code += 5;
+                if (angle_Inquiry(pos, 1) >= 2)
+                {
+                    Serial.println(F("( @ Alert ignored #defaulter)"));
+                    msg_code = 420;
+                }
+                else
+                {
+                    msg_code += 5;
+                    d1[pos / display_reading_after] = (distance / 2.54);
+                }
             }
-            if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
+            if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)) && (AlertStatus != 1 || AlertStatus != 6))
             {
                 // Serial.println(F("ultra sound change detected on D2"));
                 Serial.print("##->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d2[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance2 / 2.54));
-                d2[pos / display_reading_after] = (distance2 / 2.54);
-                msg_code += 10;
+                if (angle_Inquiry(pos, 2) >= 2)
+                {
+                    Serial.println(F("( @ Alert ignored #defaulter)"));
+                    msg_code = 420;
+                }
+                else
+                {
+                    d2[pos / display_reading_after] = (distance2 / 2.54);
+                    msg_code += 10;
+                }
             }
-            if (msg_code == 5)
+            if (msg_code != 420 && (AlertStatus != 1 || AlertStatus != 6 || AlertStatus != 2 || AlertStatus != 7))
             {
-                sendRFmsg((byte)2);
-            }
-            else if (msg_code == 10)
-            {
-                sendRFmsg((byte)3);
-            }
-            else if (msg_code == 15)
-            {
+                if (msg_code == 5)
+                {
+                    sendRFmsg((byte)2);
+                }
+                else if (msg_code == 10)
+                {
+                    sendRFmsg((byte)3);
+                }
+                else if (msg_code == 15)
+                {
+                }
                 sendRFmsg((byte)4);
             }
         }
