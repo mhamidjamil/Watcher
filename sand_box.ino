@@ -17,10 +17,10 @@ bool ArraysInitialized = false;
 bool warningLED = true;
 bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-int display_reading_after = 10; //  (180/display_reading_after) = x,(18)
-
-int d1[19];
-int d2[19];
+#define display_reading_after  18//  (180/display_reading_after) = x,(10)
+#define array_size  ((180 / display_reading_after) + 1)
+int d1[array_size];
+int d2[array_size];
 int rotation_speed_delay = 50;  // angle (++ or --) after (rotation_speed)ms
 byte softMargin_ultraSound = 2; // x inches changes will be negliected
 // so increasing it will slow down rotation speed
@@ -62,9 +62,9 @@ byte warning_zone_Led = 6;
 int alarm_time = 2000;
 int temp_alrm_time = alarm_time;
 
-                                //  so after 10 degree readings will be printed
-#define echoPin 12              //  attach pin D2 Arduino to pin Echo of HC-SR04
-#define trigPin 11              // attach pin D3 Arduino to pin Trig of HC-SR04
+//  so after 10 degree readings will be printed
+#define echoPin 12 //  attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 11 // attach pin D3 Arduino to pin Trig of HC-SR04
 
 #define echoPin2 9  //  attach pin D2 Arduino to pin Echo of HC-SR04
 #define trigPin2 10 // attach pin D3 Arduino to pin Trig of HC-SR04
@@ -255,7 +255,7 @@ void sendRFmsg(byte msgCode)
 
 //~ gyro start ***************************
 
-bool gyro_monitor = true;
+bool gyro_monitoring = true;
 #include "Wire.h" // This library allows you to communicate with I2C devices.
 
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
@@ -493,12 +493,12 @@ void inputHandler(int choice)
             choice = getString().toInt();
             if (choice == 1)
             {
-                gyro_monitor = false;
+                gyro_monitoring = false;
                 Serial.println(F("gyro = false"));
             }
             else if (choice == 2)
             {
-                gyro_monitor = true;
+                gyro_monitoring = true;
                 Serial.println(F("gyro = true"));
             }
         }
@@ -521,9 +521,8 @@ void inputHandler(int choice)
             Serial.println(F("Alert when Gyro and d1's value changes"));
             Serial.println(F("Alert when Gyro and d2's value changes"));
             Serial.println(F("No Alerts"));
-            
+
             AlertStatus = getString().toInt();
-            
         }
     }
     else if (choice == 3)
@@ -663,7 +662,7 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            if (gyro_monitor)
+            if (gyro_monitoring)
             {
                 check_gy_sensor(false);
             }
@@ -695,7 +694,7 @@ void servoRotation()
         if (pos % display_reading_after == 0)
         {
             blynk(20);
-            if (gyro_monitor)
+            if (gyro_monitoring)
             {
                 check_gy_sensor(false);
             }
