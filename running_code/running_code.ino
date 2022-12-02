@@ -1,6 +1,6 @@
 // ! Servo (ultra sound) work need some time. (adjesting servo angels)
-// ! RF msg delivery want some time , manage_defaulters() need some time.
-//$ Last Update : 12:41 PM 03/DEC/22  (-> Confidence level (dropping to increase) ~ 85%)
+// ! RF msg delivery want some time
+//$ Last Update : 12:41 PM 03/DEC/22  (-> Confidence level (dropping to increase) ~ 70%)
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes (only)
 //  Alert Status = 2: Alert when d2's value changes (only)
@@ -1207,7 +1207,7 @@ void manage_defaulters(int function_)
     //         }
     //     }
     // }
-    if (function_ == 2)
+    else if (function_ == 2)
     {
         Serial.println(F("Defaulters list"));
         for (int i = 0; i < defaulter_array_columns; i++)
