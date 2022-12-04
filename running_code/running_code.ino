@@ -1,6 +1,6 @@
 // ! Servo (ultra sound) work need some time. (adjesting servo angels)
-// ! RF msg delivery want some time
-//$ Last Update : 12:41 PM 03/DEC/22  (-> Confidence level (dropping to increase) ~ 70%)
+// ! RF msg delivery want some time , manage_defaulters() need some time.
+//$ Last Update : 12:41 PM 03/DEC/22  (-> Confidence level (dropping to increase) ~ 85%)
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes (only)
 //  Alert Status = 2: Alert when d2's value changes (only)
@@ -798,7 +798,7 @@ void update_distance(bool check)
                 Serial.println(" current value : " + String(distance / 2.54));
                 if (angle_Inquiry(pos, 1, (distance / 2.54), (d1[pos / display_reading_after])) >= 4)
                 {
-                    Serial.println(F("( @ Alert ignored #defaulter (adjesting angle) )"));
+                    Serial.println(F("( @ Alert ignored #defaulter (trying to adjest angle) )"));
                     int tempHolder = 0;
                     tempHolder = redefine_angle(angleHolder[angle_index]);
                     if (tempHolder != -1)
@@ -827,7 +827,7 @@ void update_distance(bool check)
                 Serial.println(" current value : " + String(distance2 / 2.54));
                 if (angle_Inquiry(pos, 2, (distance2 / 2.54), (d2[pos / display_reading_after])) >= 4)
                 {
-                    Serial.println(F("( @ Alert ignored #defaulter (adjesting angle) )"));
+                    Serial.println(F("( @ Alert ignored #defaulter (trying to adjest angle) )"));
                     int tempHolder = 0;
                     tempHolder = redefine_angle(angleHolder[angle_index]);
                     if (tempHolder != -1)
@@ -1094,14 +1094,17 @@ int redefine_angle(int angle)
     {
         starter = angle - (display_reading_after / divider);
         finisher = angle + (display_reading_after / divider);
-        for (newAngle = (angle -= 2); angle >= starter; angle -= 2)
+        // Serial.print(F("Starting from -> "));
+        // Serial.print(angle);
+        for (newAngle = angle; angle >= starter; angle -= 2)
         {
-            Myservo.write(newAngle);
+            Myservo.write(angle);
             delay(rotation_speed_delay);
             update_distance_values();
-            if ((distance / 2.54) < 450 && (distance / 2.54) < 450)
+            if ((distance / 2.54) < 450 && (distance2 / 2.54) < 450)
             {
-                Serial.println("-----------------------------------------------");
+                Serial.println(F("  "));
+                Serial.println("-------------------------***-------------------------");
                 Serial.print(F("Angle redifined prev Angle -> "));
                 Serial.print(angle);
                 Serial.print(F(" new Angle -> "));
@@ -1111,18 +1114,27 @@ int redefine_angle(int angle)
                 Serial.print(F(" Distance 2 : "));
                 Serial.println((distance2 / 2.54));
                 Serial.println(F(")"));
-                Serial.println("-----------------------------------------------");
+                Serial.println("-------------------------***-------------------------");
                 return newAngle;
             }
+            else
+            {
+                Serial.print(F(", "));
+                Serial.print(angle);
+            }
         }
-        for (newAngle = (angle += 2); angle <= finisher; angle += 2)
+        Serial.println();
+        // Serial.print(F("Starting from -> "));
+        // Serial.print(angle);
+        for (newAngle = angle; angle <= finisher; angle += 2)
         {
-            Myservo.write(newAngle);
+            Myservo.write(angle);
             delay(rotation_speed_delay);
             update_distance_values();
-            if ((distance / 2.54) < 450 && (distance / 2.54) < 450)
+            if ((distance / 2.54) < 450 && (distance2 / 2.54) < 450)
             {
-                Serial.println("-----------------------------------------------");
+                Serial.println(F(" "));
+                Serial.println("-------------------------$$$-------------------------");
                 Serial.print(F("Angle redifined prev Angle -> "));
                 Serial.print(angle);
                 Serial.print(F(" new Angle -> "));
@@ -1132,8 +1144,13 @@ int redefine_angle(int angle)
                 Serial.print(F(" Distance 2 : "));
                 Serial.println((distance2 / 2.54));
                 Serial.println(F(")"));
-                Serial.println("-----------------------------------------------");
+                Serial.println("-------------------------$$$-------------------------");
                 return newAngle;
+            }
+            else
+            {
+                Serial.print(F(", "));
+                Serial.print(angle);
             }
         }
         // newAngle = angle - (display_reading_after / divider);
@@ -1207,7 +1224,7 @@ void manage_defaulters(int function_)
     //         }
     //     }
     // }
-    else if (function_ == 2)
+    if (function_ == 2)
     {
         Serial.println(F("Defaulters list"));
         for (int i = 0; i < defaulter_array_columns; i++)
