@@ -1,6 +1,6 @@
 // ! void loop need some time to adjest it self according to AlertStatus
 // (distance) value with previous value.
-//$ 11:10 PM 5/12/22
+//$ 11:10 PM 19/DEC/22
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes
 //  Alert Status = 2: Alert when d2's value changes
