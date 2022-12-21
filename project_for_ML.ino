@@ -319,20 +319,20 @@ void check_gy_sensor(bool print_records) {
       Serial.print(F(")"));
 
       Serial.print(F("  / XY ("));
-      Serial.print((change_detector(accelerometer_x, mainX) +
-                    change_detector(accelerometer_y, mainY)) /
+      Serial.print((change_detector(global_X, mainX) +
+                    change_detector(global_Y, mainY)) /
                    2);
       Serial.print(F(")"));
       Serial.print(F("  /XYZ ("));
-      Serial.print((change_detector(accelerometer_x, mainX) +
-                    change_detector(accelerometer_y, mainY) +
-                    change_detector(accelerometer_z, mainZ)) /
+      Serial.print((change_detector(global_X, mainX) +
+                    change_detector(global_Y, mainY) +
+                    change_detector(global_Z, mainZ)) /
                    3);
       Serial.print(F(")"));
       Serial.println(F(" #"));
       global_X = mainX;
       global_Y = mainY;
-      // global_Z = mainZ;
+      global_Z = mainZ;
     }
     if (mainX != 0 || mainY != 0) {
       if (gy_beep == 0) {
