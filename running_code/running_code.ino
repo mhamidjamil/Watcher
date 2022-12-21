@@ -16,6 +16,7 @@ bool modle_trained = false;
 int trainTime = 10; // seconds
 bool ML_function(int G_X, int G_Y, int G_Z);
 int newMargin = 0;
+void trainModle();
 //%----------------------------<
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
@@ -248,7 +249,7 @@ void check_gy_sensor(bool print_records) {
   if (AlertStatus == 98 && (!modle_trained)) {
     // if ((!modle_trained)) {
     // train new modle
-    Serial.println(F("Training new modle"));
+    // Serial.println(F("Training new modle"));
     trainModle();
     modle_trained = true;
     check_gy_sensor(false);
@@ -392,6 +393,7 @@ void inputHandler(int choice) {
     Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
     Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
     Serial.println("7: Margin ," + String(Margin));
+    Serial.println("8: NEW Margin ," + String(newMargin));
     // Serial.println("6: display_reading_after ," +
     // String(display_reading_after));
 
@@ -433,6 +435,8 @@ void inputHandler(int choice) {
       // BuzzerBeeping = tempvar_;
     } else if (choice == 7) {
       choise_handler(&Margin);
+    } else if (choice == 8) {
+      choise_handler(&newMargin);
     }
     // if (choice == 1) {
     //   Serial.println("Old value of critical_zone = " + critical_zone);
@@ -613,6 +617,8 @@ void inputHandler(int choice) {
     AlertStatus = 98;
   } else if (choice == 980) {
     AlertStatus = 4;
+  } else if (198) {
+    trainModle();
   }
   choice = 0;
   Serial.println(F("Handler out"));
@@ -981,7 +987,7 @@ void trainModle() {
       Serial.print(".");
     }
     if (i % 10 == 0) {
-      Serial.print(String(i));
+      Serial.print(String(i) + "%");
     }
     Wire.beginTransmission(MPU_ADDR);
     Wire.write(0x3B);
@@ -997,7 +1003,8 @@ void trainModle() {
     delay(100);
     if (tempAvg > Stable_highestValue && i != 0) {
       Stable_highestValue = tempAvg;
-      Serial.print(" SH_Value " + String(Stable_highestValue) + " ");
+      // Serial.print(" SH_Value " + String(Stable_highestValue) + " ");
+      Serial.print("{" + String(Stable_highestValue) + "}");
     }
     pre_X = accelerometer_x;
     pre_Y = accelerometer_y;
@@ -1069,7 +1076,19 @@ int getDigitCout(int number) {
   }
   return count;
 }
-bool ML_function(int G_X, int G_Y, int G_Z) { return false; }
+bool ML_function(int G_X, int G_Y, int G_Z) {
+  if (newMargin == 0) {
+    Serial.println("Model not trained yet");
+    return false;
+  }
+  int avg =
+      gyro_avg(change_detector(G_X, global_X), change_detector(G_Y, global_Y),
+               change_detector(G_Z, global_Z));
+  if (avg > newMargin) {
+    return true;
+  }
+  return false;
+}
 int gyro_avg(int X_, int Y_, int Z_) {
   if (X_ < 0) {
     X_ = X_ * -1;
