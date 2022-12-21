@@ -245,7 +245,14 @@ char *convert_int16_to_str(
 }
 int gy_beep = 0;
 void check_gy_sensor(bool print_records) {
-
+  if (AlertStatus == 98 && (!modle_trained)) {
+    // if ((!modle_trained)) {
+    // train new modle
+    Serial.println(F("Training new modle"));
+    trainModle();
+    modle_trained = true;
+    check_gy_sensor(false);
+  }
   // if (servo_Rotaion)
   // {
   //     servo_Rotaion = false;
@@ -307,70 +314,67 @@ void check_gy_sensor(bool print_records) {
     Serial.println(F(" "));
   }
 
-  mainX = accelerometer_x;
-  mainX = accelerometer_y;
-  mainZ = accelerometer_z;
-  if (AlertStatus == 98 && (!modle_trained)) {
-    // train new modle
-    Serial.println(F("Training new modle"));
-    trainModle();
-    modle_trained = true;
-  }
-  // mainZ = accelerometer_z;
-  //   if (((((change_Detector(mainX, global_X, Margin)) ||
-  //          (change_Detector(mainY, global_Y, Margin)))) &&
-  //        AlertStatus != 98) ||
-  //       (AlertStatus == 98 && (ML_function(mainX, mainY, mainZ)))) {
-  //     if (!print_records) {
-  //       Serial.print(F("!@ aX = "));
-  //       Serial.print(global_X);
-  //       Serial.print(F(" -> "));
-  //       Serial.print(mainX);
-  //       Serial.print(F(" ("));
-  //       Serial.print(change_detector(mainX, global_X));
-  //       Serial.print(F(")"));
-  //       Serial.print(F(" | aY = "));
-  //       Serial.print(global_Y);
-  //       Serial.print(F(" -> "));
-  //       Serial.print(mainY);
-  //       Serial.print(F(" ("));
-  //       Serial.print(change_detector(mainY, global_Y));
-  //       Serial.print(F(")"));
+  // mainX = String(accelerometer_x).toInt();
+  // mainX = String(accelerometer_y).toInt();
+  // mainZ = String(accelerometer_z).toInt();
 
-  //       Serial.print(F("  / XY ("));
-  //       Serial.print((change_detector(global_X, mainX) +
-  //                     change_detector(global_Y, mainY)) /
-  //                    2);
-  //       Serial.print(F(")"));
-  //       Serial.print(F("  /XYZ ("));
-  //       Serial.print((change_detector(global_X, mainX) +
-  //                     change_detector(global_Y, mainY) +
-  //                     change_detector(global_Z, mainZ)) /
-  //                    3);
-  //       Serial.print(F(")"));
-  //       Serial.println(F(" #"));
-  //       global_X = mainX;
-  //       global_Y = mainY;
-  //       global_Z = mainZ;
-  //     }
-  //     if (mainX != 0 || mainY != 0) {
-  //       if (gy_beep == 0) {
-  //         Serial.println(F("( @_ignored_@ )"));
-  //         gy_beep++;
-  //       } else if (gy_beep >= 1) {
-  //         if (AlertStatus > 3 && AlertStatus != 8) {
-  //           if (servo_Rotaion) {
-  //             custom_beep(2000, 200);
-  //           } else {
-  //             beep();
-  //           }
-  //           sendRFmsg(1);
-  //         }
-  //         Serial.println(F("#######################"));
-  //         gy_beep = 0;
-  //       }
-  //     }
-  //   }
+  mainX = accelerometer_x;
+  mainY = accelerometer_y;
+  mainZ = accelerometer_z;
+  if (((((change_Detector(mainX, global_X, Margin)) ||
+         (change_Detector(mainY, global_Y, Margin)))) &&
+       AlertStatus != 98) ||
+      (AlertStatus == 98 && (ML_function(mainX, mainY, mainZ)))) {
+    if (!print_records) {
+      Serial.print(F("!@ aX = "));
+      Serial.print(global_X);
+      Serial.print(F(" -> "));
+      Serial.print(mainX);
+      Serial.print(F(" ("));
+      Serial.print(change_detector(mainX, global_X));
+      Serial.print(F(")"));
+      Serial.print(F(" | aY = "));
+      Serial.print(global_Y);
+      Serial.print(F(" -> "));
+      Serial.print(mainY);
+      Serial.print(F(" ("));
+      Serial.print(change_detector(mainY, global_Y));
+      Serial.print(F(")"));
+
+      Serial.print(F("  / XY ("));
+      Serial.print((change_detector(global_X, mainX) +
+                    change_detector(global_Y, mainY)) /
+                   2);
+      Serial.print(F(")"));
+      Serial.print(F("  /XYZ ("));
+      Serial.print((change_detector(global_X, mainX) +
+                    change_detector(global_Y, mainY) +
+                    change_detector(global_Z, mainZ)) /
+                   3);
+      Serial.print(F(")"));
+      Serial.println(F(" #"));
+      global_X = mainX;
+      global_Y = mainY;
+      global_Z = mainZ;
+    }
+    if (mainX != 0 || mainY != 0) {
+      if (gy_beep == 0) {
+        Serial.println(F("( @_ignored_@ )"));
+        gy_beep++;
+      } else if (gy_beep >= 1) {
+        if (AlertStatus > 3 && AlertStatus != 8) {
+          if (servo_Rotaion) {
+            custom_beep(2000, 200);
+          } else {
+            beep();
+          }
+          sendRFmsg(1);
+        }
+        Serial.println(F("#######################"));
+        gy_beep = 0;
+      }
+    }
+  }
 }
 //~--------------------------------------------------->  gyro ends   <----------
 // % ----------------------------------------------------------------------
@@ -622,7 +626,7 @@ bool change_Detector(int value_to_be_compare, int previous_value, int margin) {
   }
 }
 void setup() {
-  AlertStatus = 98;
+  // AlertStatus = 98;
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
@@ -1052,7 +1056,7 @@ void trainModle() {
                      String(Shocked_lowestValue));
     }
   }
-
+  newMargin = (Shocked_lowestValue + stable_peak) / 2;
   Serial.println("Over writing previous_value: (" + String(Margin) + ")" +
                  "with new value: (" + String(newMargin) + ")");
   //   Serial.println("Model trained successfully");
