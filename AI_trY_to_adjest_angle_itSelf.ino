@@ -1,13 +1,14 @@
-// ! Servo (ultra sound) work need more time, so that it can compare new (distance) value with previous value.
-//$ 11:10 PM 30/NOV/22
+// ! Servo (ultra sound) work need some time. (adjesting servo angels)
+// ! RF msg delivery want some time , manage_defaulters() need some time.
+//$ Last Update : 12:41 PM 03/DEC/22  (-> Confidence level (dropping to increase) ~ 85%)
 byte AlertStatus = 4;
-//  Alert Status = 1: Alert when d1's value changes
-//  Alert Status = 2: Alert when d2's value changes
+//  Alert Status = 1: Alert when d1's value changes (only)
+//  Alert Status = 2: Alert when d2's value changes (only)
 //  Alert Status = 3: Alert when d1's or d2's value changes
 //  Alert Status = 4: Alert when Gyro and d1's or d2's value changes
-//  Alert Status = 5: Alert when Gyro value changes
-//  Alert Status = 6: Alert when Gyro and d1's value changes
-//  Alert Status = 7: Alert when Gyro and d2's value changes
+//  Alert Status = 5: Alert when Gyro value changes (only)
+//  Alert Status = 6: Alert when Gyro and d1's value changes (only)
+//  Alert Status = 7: Alert when Gyro and d2's value changes (only)
 // Alert Status = 8: No Alerts
 // * servo start ------------------------------
 #include <Servo.h>
@@ -17,14 +18,35 @@ bool ArraysInitialized = false;
 bool warningLED = true;
 bool BuzzerBeeping = 0;
 bool servo_Rotaion = true;
-int display_reading_after = 10; //  (180/display_reading_after) = x,(18)
-
-int d1[19];
-int d2[19];
-int rotation_speed_delay = 50;  // angle (++ or --) after (rotation_speed)ms
-byte softMargin_ultraSound = 2; // x inches changes will be negliected
+#define display_reading_after 18 //  (180/display_reading_after) = x,(10)
+#define array_size ((180 / display_reading_after) + 1)
+int d1[array_size];
+int d2[array_size];
+int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
 // so increasing it will slow down rotation speed
-
+byte softMargin_ultraSound = 4;   // x inches changes will be negliected
+#define defaulter_array_columns 5 // take angle number
+#define default_array_rows 3      // Angle number, module number and votes of curruptions
+int angle_index = 0;
+int default_array[defaulter_array_columns][default_array_rows] = {
+    {-1, 0, 0},  // 0
+    {-1, 0, 0},  // 1
+    {-1, 0, 0},  // 2
+    {-1, 0, 0},  // 3
+    {-1, 0, 0}}; // 4
+int angle_Inquiry(int angle, int sensor, int newDistance, int previousDistance);
+int angleHolder[((180 / display_reading_after) + 1)];
+void update_distance_values();
+void init_angles_array()
+{
+    for (int i = 0; i < array_size; i++)
+    {
+        angleHolder[i] = i * display_reading_after;
+    }
+}
+int redefine_angle(int angle);
+void manage_defaulters(int function_);
+void undo_defaulter(int angle, int sensor);
 // * servo end --------------------------------
 int choice = 0;
 // int input_timeout = 10000;
@@ -37,7 +59,7 @@ void deciaml_to_binary(int number);
 void SwitchInverter(int a, int b, int c, int d, bool status);
 void TestStream(int delay_);
 void BinaryManager(int number);
-void sendRFmsg(bool msgCode);
+void sendRFmsg(int msgCode);
 void check_gy_sensor(bool print_records);
 void inputHandler(int choice);
 void servoRotation();
@@ -62,9 +84,9 @@ byte warning_zone_Led = 6;
 int alarm_time = 2000;
 int temp_alrm_time = alarm_time;
 
-                                //  so after 10 degree readings will be printed
-#define echoPin 12              //  attach pin D2 Arduino to pin Echo of HC-SR04
-#define trigPin 11              // attach pin D3 Arduino to pin Trig of HC-SR04
+//  so after 10 degree readings will be printed
+#define echoPin 12 //  attach pin D2 Arduino to pin Echo of HC-SR04
+#define trigPin 11 // attach pin D3 Arduino to pin Trig of HC-SR04
 
 #define echoPin2 9  //  attach pin D2 Arduino to pin Echo of HC-SR04
 #define trigPin2 10 // attach pin D3 Arduino to pin Trig of HC-SR04
@@ -216,7 +238,7 @@ void BinaryManager(int number)
     }
     deciaml_to_binary(number);
 }
-void sendRFmsg(byte msgCode)
+void sendRFmsg(int msgCode)
 {
     // 1 for movment detected by GYRO
     // 2 for movment detected by ULTRASOUND
@@ -255,7 +277,7 @@ void sendRFmsg(byte msgCode)
 
 //~ gyro start ***************************
 
-bool gyro_monitor = true;
+bool gyro_monitoring = true;
 #include "Wire.h" // This library allows you to communicate with I2C devices.
 
 const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
@@ -264,7 +286,7 @@ int16_t accelerometer_x, accelerometer_y, accelerometer_z; // variables for acce
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0, mainZ = 0;
-int softMargin = 250, global_X = 0, global_Y = 0, global_Z = 0;
+int softMargin = 350, global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(int16_t i)
 { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
@@ -302,7 +324,8 @@ void check_gy_sensor(bool print_records)
     mainX = accelerometer_x;
     mainY = accelerometer_y;
     mainZ = accelerometer_z;
-    if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin)) || (change_Detector(mainZ, global_Z, softMargin))))
+    // if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin)) || (change_Detector(mainZ, global_Z, softMargin))))
+    if (((change_Detector(mainX, global_X, softMargin)) || (change_Detector(mainY, global_Y, softMargin))))
     {
         global_X = mainX;
         global_Y = mainY;
@@ -326,7 +349,7 @@ void check_gy_sensor(bool print_records)
             if (AlertStatus > 3)
             {
                 custom_beep(2000, 200);
-                sendRFmsg((byte)1);
+                sendRFmsg(1);
             }
             Serial.println(F("#######################"));
             gy_beep--;
@@ -339,8 +362,8 @@ void inputHandler(int choice)
     Serial.println(F("input Handler call"));
     // choice = Serial.parseInt();
     // choice = getString().toInt();
-    if (choice == 1)
-    { // to set new values of variables
+    if (choice == 1) // variables values manager
+    {                // to set new values of variables
         Serial.println(F("Changing setting...."));
         Serial.println(F("Avaiable variable to change : "));
         Serial.println("1: critical_zone ," + String(critical_zone));
@@ -414,7 +437,7 @@ void inputHandler(int choice)
         //   choice = getint();
         // }
     }
-    else if (choice == 2)
+    else if (choice == 2) // Features manager
     {
         Serial.println(F("Direct call..."));
         Serial.println(F("Enter 1 for LED  "));
@@ -423,7 +446,7 @@ void inputHandler(int choice)
         Serial.println(F("Enter 4 for Gyro operations "));
         Serial.println(F("Enter 5 for Alert status "));
         choice = getString().toInt();
-        if (choice == 1)
+        if (choice == 1) // LED manager
         {
             Serial.println(F("Enter 1 enable warning led blynk "));
             Serial.println(F("Enter 2 disable warning led blynk "));
@@ -447,7 +470,7 @@ void inputHandler(int choice)
                 digitalWrite(warning_zone_Led, LOW);
             }
         }
-        else if (choice == 2)
+        else if (choice == 2) // Buzzer manager
         {
             Serial.println(F("Enter 1 to Turn Buzzer on "));
             Serial.println(F("Enter 2 to turn onbeeping  "));
@@ -470,39 +493,51 @@ void inputHandler(int choice)
                 BuzzerBeeping = false;
             }
         }
-        else if (choice == 3)
+        else if (choice == 3) // Servo Rotation Manager
         {
             Serial.println(F("Enter 1 to stop servo_Rotaion"));
             Serial.println(F("Enter 2 to Start servo_Rotaion"));
+            Serial.println(F("Enter 3 to move servo to specific angle"));
             choice = getString().toInt();
             if (choice == 1)
             {
                 servo_Rotaion = false;
                 Serial.println(F("servo_Rotaion = false"));
+                softMargin = 200;
             }
             else if (choice == 2)
             {
                 servo_Rotaion = true;
                 Serial.println(F("servo_Rotaion = true"));
+                softMargin = 350;
+            }
+            else if (choice == 3)
+            {
+                Serial.println(F("Enter angle to move servo to : "));
+                choice = getString().toInt();
+                Serial.println(F("For how long : "));
+                int delay_temp = getString().toInt();
+                Myservo.write(choice);
+                delay(delay_temp);
             }
         }
-        else if (choice == 4)
+        else if (choice == 4) // Gyro Manager
         {
             Serial.println(F("Enter 1 to stop gyro"));
             Serial.println(F("Enter 2 to Start gyro"));
             choice = getString().toInt();
             if (choice == 1)
             {
-                gyro_monitor = false;
+                gyro_monitoring = false;
                 Serial.println(F("gyro = false"));
             }
             else if (choice == 2)
             {
-                gyro_monitor = true;
+                gyro_monitoring = true;
                 Serial.println(F("gyro = true"));
             }
         }
-        else if (choice == 5)
+        else if (choice == 5) // Alert scheme manager
         {
             //  Alert Status = 1: Alert when d1's value changes
             //  Alert Status = 2: Alert when d2's value changes
@@ -513,20 +548,19 @@ void inputHandler(int choice)
             //  Alert Status = 7: Alert when Gyro and d2's value changes
             // Alert Status = 8: No Alerts
             Serial.println(F("Enter New value : "));
-            Serial.println(F("Alert when d1's value changes"));
-            Serial.println(F("Alert when d2's value changes"));
-            Serial.println(F("Alert when d1's or d2's value changes"));
+            Serial.println(F("Alert when d1's value changes (only)"));
+            Serial.println(F("Alert when d2's value changes (only)"));
+            Serial.println(F("Alert when d1's or d2's value changes (only)"));
             Serial.println(F("Alert when Gyro and d1's or d2's value changes"));
-            Serial.println(F("Alert when Gyro value changes"));
+            Serial.println(F("Alert when Gyro value changes (only)"));
             Serial.println(F("Alert when Gyro and d1's value changes"));
             Serial.println(F("Alert when Gyro and d2's value changes"));
             Serial.println(F("No Alerts"));
-            
+
             AlertStatus = getString().toInt();
-            
         }
     }
-    else if (choice == 3)
+    else if (choice == 3) // RF manager
     {
         // RF module
         Serial.println(F("Enter 1 to Force pin high/low"));
@@ -598,6 +632,7 @@ void setup()
     digitalWrite(pin3, HIGH);
     digitalWrite(pin4, HIGH);
     pinMode(LED_BUILTIN, OUTPUT);
+    init_angles_array();
     Myservo.attach(2);
     pinMode(warning_zone_Led, OUTPUT);
     pinMode(critical_zone_buzzer, OUTPUT);
@@ -618,6 +653,7 @@ void setup()
 }
 void loop()
 {
+    int temp_send_if_servo_off = 0;
     if (Serial.available() >= 1)
     {
         choice = Serial.parseInt();
@@ -626,10 +662,22 @@ void loop()
             inputHandler(choice);
         }
     }
-    check_gy_sensor(true);
     if (servo_Rotaion)
     {
         servoRotation();
+    }
+    else
+    {
+        temp_send_if_servo_off++;
+        if (temp_send_if_servo_off % 20 == 0)
+        {
+            check_gy_sensor(true);
+        }
+        else
+        {
+            check_gy_sensor(false);
+            temp_send_if_servo_off = 0;
+        }
     }
     // Clears the trigPin condition
     update_distance(false);
@@ -660,10 +708,10 @@ void servoRotation()
         Myservo.write(pos);
         delay(rotation_speed_delay);
 
-        if (pos % display_reading_after == 0)
+        if (pos == angleHolder[angle_index])
         {
             blynk(20);
-            if (gyro_monitor)
+            if (gyro_monitoring && ArraysInitialized)
             {
                 check_gy_sensor(false);
             }
@@ -673,8 +721,10 @@ void servoRotation()
 
             update_distance(true);
             // Serial.println(F("update_distance out"));
+            angle_index++;
         }
     }
+    angle_index--;
     // Serial.println(F("ServoRotation 180 out"));
     delay(200);
 
@@ -692,58 +742,49 @@ void servoRotation()
         Myservo.write(pos);
         delay(rotation_speed_delay);
 
-        if (pos % display_reading_after == 0)
+        if (pos == angleHolder[angle_index])
         {
             blynk(20);
-            if (gyro_monitor)
+            if (gyro_monitoring && ArraysInitialized)
             {
                 check_gy_sensor(false);
             }
+            // Serial.println(F("gyro out"));
 
             Serial.print("Angle : " + String(pos) + " -> ");
 
             update_distance(true);
+            // Serial.println(F("update_distance out"));
+            angle_index--;
         }
     }
+    angle_index++;
+    manage_defaulters(2); // 2 for print defaulters and decrements in there votes
     if (!ArraysInitialized)
     {
         ArraysInitialized = true;
-        Serial.println(F("data in array is"));
+        Serial.println(F("data in array is : "));
 
         int ijk = 0;
         Serial.print("D1 : ");
-        for (; ijk < 18; ijk++)
+        for (; ijk < sizeof(d1) / sizeof(int); ijk++)
         {
-            Serial.print(String(d1[ijk]) + ",");
+            Serial.print(String(d1[ijk]) + " ,");
         }
         Serial.println("");
 
         ijk = 0;
         Serial.print("D2 : ");
-        for (; ijk < 18; ijk++)
+        for (; ijk < sizeof(d2) / sizeof(int); ijk++)
         {
-            Serial.print(String(d2[ijk]) + ",");
+            Serial.print(String(d2[ijk]) + " ,");
         }
         Serial.println("");
     }
 }
 void update_distance(bool check)
 {
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-    duration = pulseIn(echoPin, HIGH);
-    distance = duration * 0.034 / 2;
-
-    digitalWrite(trigPin2, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPin2, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin2, LOW);
-    duration2 = pulseIn(echoPin2, HIGH);
-    distance2 = duration2 * 0.034 / 2;
+    update_distance_values();
 
     Serial.print(F("D1 : "));
     Serial.print(distance / 2.54);
@@ -764,35 +805,78 @@ void update_distance(bool check)
         {
             int msg_code = 0;
             // Serial.println(F("ultra sound change detected"));
-            if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)))
+            if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]), softMargin_ultraSound)) && (AlertStatus != 2 || AlertStatus != 7))
             {
                 // Serial.println(F("ultra sound change detected on D1"));
                 Serial.print("#->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d1[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance / 2.54));
+                if (angle_Inquiry(pos, 1, (distance / 2.54), (d1[pos / display_reading_after])) >= 4)
+                {
+                    Serial.println(F("( @ Alert ignored #defaulter (trying to adjest angle) )"));
+                    int tempHolder = 0;
+                    tempHolder = redefine_angle(angleHolder[angle_index]);
+                    if (tempHolder != -1)
+                    {
+                        undo_defaulter(pos, 1);
+                        angleHolder[angle_index] = tempHolder;
+                        d2[pos / display_reading_after] = (distance2 / 2.54);
+                    }
+                    else
+                    {
+                        Serial.println(F("Unable to redefine angle :{ "));
+                    }
+                    msg_code = 420;
+                }
+                else
+                {
+                    msg_code += 5;
+                }
                 d1[pos / display_reading_after] = (distance / 2.54);
-                msg_code += 5;
             }
-            if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)))
+            if ((change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]), softMargin_ultraSound)) && (AlertStatus != 1 || AlertStatus != 6))
             {
                 // Serial.println(F("ultra sound change detected on D2"));
                 Serial.print("##->(" + String(pos) + ")->");
                 Serial.print("previous value : " + String(d2[pos / display_reading_after]));
                 Serial.println(" current value : " + String(distance2 / 2.54));
+                if (angle_Inquiry(pos, 2, (distance2 / 2.54), (d2[pos / display_reading_after])) >= 4)
+                {
+                    Serial.println(F("( @ Alert ignored #defaulter (trying to adjest angle) )"));
+                    int tempHolder = 0;
+                    tempHolder = redefine_angle(angleHolder[angle_index]);
+                    if (tempHolder != -1)
+                    {
+                        undo_defaulter(pos, 2);
+                        angleHolder[angle_index] = tempHolder;
+                        d1[pos / display_reading_after] = (distance / 2.54);
+                    }
+                    else
+                    {
+                        Serial.println(F("Unable to redefine angle :{ "));
+                    }
+                    msg_code = 420;
+                }
+                else
+                {
+                    msg_code += 10;
+                }
                 d2[pos / display_reading_after] = (distance2 / 2.54);
-                msg_code += 10;
             }
-            if (msg_code == 5)
+            if (msg_code != 420 && (AlertStatus != 1 || AlertStatus != 6 || AlertStatus != 2 || AlertStatus != 7))
             {
-                sendRFmsg((byte)2);
-            }
-            else if (msg_code == 10)
-            {
-                sendRFmsg((byte)3);
-            }
-            else if (msg_code == 15)
-            {
-                sendRFmsg((byte)4);
+                if (msg_code == 5)
+                {
+                    sendRFmsg(2);
+                }
+                else if (msg_code == 10)
+                {
+                    sendRFmsg(3);
+                }
+                else if (msg_code == 15)
+                {
+                }
+                sendRFmsg(4);
             }
         }
     }
@@ -937,4 +1021,261 @@ void choise_handler(int *p)
     *p = newvalue;
     Serial.println(String(*p));
     // Serial.println("new value : " + String(*p));
+}
+int angle_Inquiry(int angle, int sensor, int newDistance, int previousDistance)
+{
+    for (int i = 0; i < defaulter_array_columns; i++)
+    {
+        if (default_array[i][0] == angle && default_array[i][1] == sensor)
+        {
+            if (default_array[i][2] < 100)
+            {
+                return (default_array[i][2]++);
+            }
+            else
+            {
+                return default_array[i][2];
+            }
+        }
+        else if (default_array[i][0] == -1) // particular index is free to use
+        {
+            if ((newDistance >= 460 || previousDistance >= 460) && ((abs(previousDistance - newDistance)) > 250))
+            {
+                default_array[i][0] = angle;
+                default_array[i][1] = sensor;
+                default_array[i][2] = 4;
+                return (default_array[i][2]);
+            }
+            else
+            {
+                default_array[i][0] = angle;
+                default_array[i][1] = sensor;
+                return (default_array[i][2]++);
+            }
+        }
+    } // in case if array is full
+    int j = 0;
+    for (int k = 1; k < defaulter_array_columns; k++)
+    { // find the array who has less vote so can be replaced
+        if (default_array[j][2] < default_array[k][2])
+        {
+            if (default_array[k][2] < 30)
+            {
+                j = k;
+            }
+            else
+            {
+                Serial.println(" Error code #1k+ ");
+            }
+        }
+    }
+    if ((newDistance >= 460 || previousDistance >= 460) && ((abs(previousDistance - newDistance)) > 250))
+    {
+        default_array[j][0] = angle;
+        default_array[j][1] = sensor;
+        default_array[j][2] = 4;
+        return (default_array[j][2]);
+    }
+    else
+    {
+        default_array[j][0] = angle;
+        default_array[j][1] = sensor;
+        return (default_array[j][2]++);
+    }
+}
+void update_distance_values()
+{
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+    duration = pulseIn(echoPin, HIGH);
+    distance = duration * 0.034 / 2;
+
+    digitalWrite(trigPin2, LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPin2, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin2, LOW);
+    duration2 = pulseIn(echoPin2, HIGH);
+    distance2 = duration2 * 0.034 / 2;
+}
+int redefine_angle(int angle)
+{
+    int newAngle = 0, starter = 0, finisher = 0;
+
+    for (int divider = 6; divider > 0; divider -= 2)
+    {
+        starter = angle - (display_reading_after / divider);
+        finisher = angle + (display_reading_after / divider);
+        Serial.printf("%d <--- %d ---> %d\n", starter, angle, finisher);
+        // Serial.print(angle);
+        // Serial.print(F(" <incrementing & decrementing> "));
+        for (newAngle = angle; angle >= starter; angle -= 2)
+        {
+            Myservo.write(angle);
+            delay(rotation_speed_delay);
+            update_distance_values();
+            if ((distance / 2.54) < 450 && (distance2 / 2.54) < 450)
+            {
+                // Serial.println(F("  "));
+                Serial.println("-------------------------***-------------------------");
+                Serial.print(F("Angle redifined prev Angle -> "));
+                Serial.print(angle);
+                Serial.print(F(" new Angle -> "));
+                Serial.println(newAngle);
+                Serial.print(F(" New (Distance 1 : "));
+                Serial.print((distance / 2.54));
+                Serial.print(F(" Distance 2 : "));
+                Serial.print((distance2 / 2.54));
+                Serial.println(F(")"));
+                Serial.println("-------------------------***-------------------------");
+                return newAngle;
+            }
+            else
+            {
+                Serial.print(F(", "));
+                Serial.print(angle);
+            }
+        }
+        Serial.println();
+        Serial.print(F(" <incrementing> "));
+        // Serial.print(angle);
+        for (newAngle = angle; angle <= finisher; angle += 2)
+        {
+            Myservo.write(angle);
+            delay(rotation_speed_delay);
+            update_distance_values();
+            if ((distance / 2.54) < 450 && (distance2 / 2.54) < 450)
+            {
+                // Serial.println(F(" "));
+                Serial.println("-------------------------$$$-------------------------");
+                Serial.print(F("Angle redifined prev Angle -> "));
+                Serial.print(angle);
+                Serial.print(F(" new Angle -> "));
+                Serial.println(newAngle);
+                Serial.print(F(" New (Distance 1 : "));
+                Serial.print((distance / 2.54));
+                Serial.print(F(" Distance 2 : "));
+                Serial.print((distance2 / 2.54));
+                Serial.println(F(")"));
+                Serial.println("-------------------------$$$-------------------------");
+                return newAngle;
+            }
+            else
+            {
+                Serial.print(F(", "));
+                Serial.print(angle);
+            }
+        }
+        // newAngle = angle - (display_reading_after / divider);
+        // Myservo.write(newAngle);
+        // delay(30);
+        // update_distance_values();
+        // if (distance < 450 && distance2 < 450)
+        // {
+        //     Serial.print(F("Angle redifined prev Angle -> "));
+        //     Serial.print(angle);
+        //     Serial.print(F(" new Angle -> "));
+        //     Serial.println(newAngle);
+        //     return newAngle;
+        // }
+        // newAngle = angle + (display_reading_after / divider);
+        // Myservo.write(newAngle);
+        // delay(30);
+        // update_distance_values();
+        // if (distance < 450 && distance2 < 450)
+        // {
+        //     Serial.print(F("Angle redifined prev Angle -> "));
+        //     Serial.print(angle);
+        //     Serial.print(F(" new Angle -> "));
+        //     Serial.println(newAngle);
+        //     return newAngle;
+        // }
+    }
+    Serial.println(F("logic error #code_RED"));
+    return -1;
+}
+void manage_defaulters(int function_)
+{ // decrement in votes (and print angels across there vote and sensor number if function ==2)
+    // increment in votes (and print angels across there vote and sensor number if function ==1)
+    // print angels across there vote and sensor number if function ==0
+    // reset votes if function ==3
+    if (function_ == 2 || function_ == 1)
+    {
+        for (int i = 0; i < defaulter_array_columns; i++)
+        {
+            if (default_array[i][0] >= 0)
+            {
+                if (default_array[i][2] == 1)
+                {
+                    default_array[i][0] = -1;
+                    default_array[i][1] = 0;
+                    default_array[i][2] = 0;
+                }
+                else
+                {
+                    default_array[i][2]--;
+                }
+                break;
+            }
+        }
+    }
+    // else if (function_ == 1)
+    // {
+    //     for (int i = 0; i < defaulter_array_columns; i++)
+    //     {
+    //         if (default_array[i][0] == angle_index && default_array[i][1] == 1)
+    //         {
+    //             default_array[i][2]++;
+    //             break;
+    //         }
+    //         else if (default_array[i][0] == 0 && default_array[i][1] == 0)
+    //         {
+    //             default_array[i][0] = angle_index;
+    //             default_array[i][1] = 1;
+    //             default_array[i][2]++;
+    //             break;
+    //         }
+    //     }
+    // }
+    if (function_ == 2)
+    {
+        Serial.println(F("Defaulters list"));
+        for (int i = 0; i < defaulter_array_columns; i++)
+        {
+            if (default_array[i][0] != -1)
+            {
+                Serial.print(F("Angle -> "));
+                Serial.print(default_array[i][0]);
+                Serial.print(F(" Sensor -> "));
+                Serial.print(default_array[i][1]);
+                Serial.print(F(" Votes -> "));
+                Serial.println(default_array[i][2]);
+            }
+        }
+    }
+    // else if (function_ == 3)
+    // {
+    //     for (int i = 0; i < defaulter_array_columns; i++)
+    //     {
+    //         default_array[i][0] = -1;
+    //         default_array[i][1] = 0;
+    //         default_array[i][2] = 0;
+    //     }
+    // }
+}
+void undo_defaulter(int angle, int sensor)
+{
+    for (int i = (defaulter_array_columns - 1); i >= 0; i--)
+    {
+        if (default_array[i][0] == angle && default_array[i][1] == sensor)
+        {
+            default_array[i][0] = -1;
+            default_array[i][1] = 0;
+            default_array[i][2] = 0;
+            break;
+        }
+    }
 }
