@@ -1,6 +1,6 @@
 // ! void loop need some time to adjest it self according to AlertStatus
 // (distance) value with previous value.
-//$ 07:40 PM 21/DEC/22
+//$ 12:29 AM 15/FEB/22
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes
 //  Alert Status = 2: Alert when d2's value changes
@@ -10,13 +10,6 @@ byte AlertStatus = 4;
 //  Alert Status = 6: Alert when Gyro and d1's value changes
 //  Alert Status = 7: Alert when Gyro and d2's value changes
 // Alert Status = 8: No Alerts
-//%----------------------------<
-//  Alert Status = 98 --> ML Mode
-bool modle_trained = false;
-int trainTime = 10; // seconds
-bool ML_function(int G_X, int G_Y, int G_Z);
-int newMargin = 0;
-//%----------------------------<
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -58,9 +51,6 @@ void blynk(int defined_delay);
 String getString();
 void choise_handler(int *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
-void adjest_gyro_margin();
-int change_detector(int val1, int val2);
-int gyro_avg(int X_, int Y_, int Z_);
 // # 20+ functions Defined =====================================
 
 //  +---------------------------------------------------> Ultrasound start  <---
@@ -234,8 +224,8 @@ int16_t accelerometer_x, accelerometer_y,
     accelerometer_z; // variables for accelerometer raw data
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
-int mainX = 0, mainY = 0, mainZ = 0;
-int Margin = 350, global_X = 0, global_Y = 0, global_Z = 0;
+int mainX = 0, mainY = 0;
+int softMargin = 350, global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(
     int16_t i) { // converts int16 to string. Moreover, resulting strings will
@@ -245,23 +235,20 @@ char *convert_int16_to_str(
 }
 int gy_beep = 0;
 void check_gy_sensor(bool print_records) {
-
   // if (servo_Rotaion)
   // {
   //     servo_Rotaion = false;
   // }
   delay(100);
-  // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and
-  // MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x3B);
-
-  // the parameter indicates that the Arduino will send a restart.
-  // As a result, the connection is kept active.
-  Wire.endTransmission(false);
-
-  // request a total of 7*2=14 registers
-  Wire.requestFrom(MPU_ADDR, 7 * 2, true);
+  Wire.write(
+      0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and
+             // MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
+  Wire.endTransmission(
+      false); // the parameter indicates that the Arduino will send a restart.
+              // As a result, the connection is kept active.
+  Wire.requestFrom(MPU_ADDR, 7 * 2,
+                   true); // request a total of 7*2=14 registers
 
   // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in
   // the same variable
@@ -277,100 +264,52 @@ void check_gy_sensor(bool print_records) {
   if (print_records) {
     Serial.print(F("--->aX = "));
     Serial.print(convert_int16_to_str(accelerometer_x));
-    Serial.print(" (");
-    Serial.print(change_detector(accelerometer_x, mainX));
-    Serial.print(")");
-
-    Serial.print(F("  | aY = "));
+    Serial.print(F(" | aY = "));
     Serial.print(convert_int16_to_str(accelerometer_y));
-    Serial.print("  (");
-    Serial.print(change_detector(accelerometer_y, mainY));
-    Serial.print(")");
-
     Serial.print(F(" | aZ = "));
     Serial.print(convert_int16_to_str(accelerometer_z));
-    Serial.print("  (");
-    Serial.print(change_detector(accelerometer_z, mainZ));
-    Serial.print(")");
-
-    Serial.print(F("  / XY ("));
-    Serial.print((change_detector(accelerometer_x, mainX) +
-                  change_detector(accelerometer_y, mainY)) /
-                 2);
-    Serial.print(F(")"));
-    Serial.print(F("  /XYZ ("));
-    Serial.print((change_detector(accelerometer_x, mainX) +
-                  change_detector(accelerometer_y, mainY) +
-                  change_detector(accelerometer_z, mainZ)) /
-                 3);
-    Serial.print(F(")"));
     Serial.println(F(" "));
   }
 
   mainX = accelerometer_x;
-  mainX = accelerometer_y;
-  mainZ = accelerometer_z;
-  if (AlertStatus == 98 && (!modle_trained)) {
-    // train new modle
-    Serial.println(F("Training new modle"));
-    trainModle();
-    modle_trained = true;
-  }
+  mainY = accelerometer_y;
   // mainZ = accelerometer_z;
-  //   if (((((change_Detector(mainX, global_X, Margin)) ||
-  //          (change_Detector(mainY, global_Y, Margin)))) &&
-  //        AlertStatus != 98) ||
-  //       (AlertStatus == 98 && (ML_function(mainX, mainY, mainZ)))) {
-  //     if (!print_records) {
-  //       Serial.print(F("!@ aX = "));
-  //       Serial.print(global_X);
-  //       Serial.print(F(" -> "));
-  //       Serial.print(mainX);
-  //       Serial.print(F(" ("));
-  //       Serial.print(change_detector(mainX, global_X));
-  //       Serial.print(F(")"));
-  //       Serial.print(F(" | aY = "));
-  //       Serial.print(global_Y);
-  //       Serial.print(F(" -> "));
-  //       Serial.print(mainY);
-  //       Serial.print(F(" ("));
-  //       Serial.print(change_detector(mainY, global_Y));
-  //       Serial.print(F(")"));
-
-  //       Serial.print(F("  / XY ("));
-  //       Serial.print((change_detector(global_X, mainX) +
-  //                     change_detector(global_Y, mainY)) /
-  //                    2);
-  //       Serial.print(F(")"));
-  //       Serial.print(F("  /XYZ ("));
-  //       Serial.print((change_detector(global_X, mainX) +
-  //                     change_detector(global_Y, mainY) +
-  //                     change_detector(global_Z, mainZ)) /
-  //                    3);
-  //       Serial.print(F(")"));
-  //       Serial.println(F(" #"));
-  //       global_X = mainX;
-  //       global_Y = mainY;
-  //       global_Z = mainZ;
-  //     }
-  //     if (mainX != 0 || mainY != 0) {
-  //       if (gy_beep == 0) {
-  //         Serial.println(F("( @_ignored_@ )"));
-  //         gy_beep++;
-  //       } else if (gy_beep >= 1) {
-  //         if (AlertStatus > 3 && AlertStatus != 8) {
-  //           if (servo_Rotaion) {
-  //             custom_beep(2000, 200);
-  //           } else {
-  //             beep();
-  //           }
-  //           sendRFmsg(1);
-  //         }
-  //         Serial.println(F("#######################"));
-  //         gy_beep = 0;
-  //       }
-  //     }
-  //   }
+  if (((change_Detector(mainX, global_X, softMargin)) ||
+       (change_Detector(mainY, global_Y, softMargin)))) {
+    if (!print_records) {
+      Serial.print(F("!@ aX = "));
+      Serial.print(global_X);
+      Serial.print(F(" -> "));
+      Serial.print(mainX);
+      Serial.print(F(" | aY = "));
+      Serial.print(global_Y);
+      Serial.print(F(" -> "));
+      Serial.print(mainY);
+      // Serial.print(F(" | aZ = "));
+      // Serial.print(convert_int16_to_str(accelerometer_z));
+      Serial.println(F(" #"));
+      global_X = mainX;
+      global_Y = mainY;
+      // global_Z = mainZ;
+    }
+    if (mainX != 0 || mainY != 0) {
+      if (gy_beep == 0) {
+        Serial.println(F("( @_ignored_@ )"));
+        gy_beep++;
+      } else if (gy_beep >= 1) {
+        if (AlertStatus > 3 && AlertStatus != 8) {
+          if (servo_Rotaion) {
+            custom_beep(2000, 200);
+          } else {
+            beep();
+          }
+          sendRFmsg(1);
+        }
+        Serial.println(F("#######################"));
+        gy_beep = 0;
+      }
+    }
+  }
 }
 //~--------------------------------------------------->  gyro ends   <----------
 // % ----------------------------------------------------------------------
@@ -387,7 +326,7 @@ void inputHandler(int choice) {
     // Serial.println("4: input_timeout ," + String(input_timeout));
     Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
     Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
-    Serial.println("7: Margin ," + String(Margin));
+    Serial.println("7: softMargin ," + String(softMargin));
     // Serial.println("6: display_reading_after ," +
     // String(display_reading_after));
 
@@ -428,7 +367,7 @@ void inputHandler(int choice) {
       }
       // BuzzerBeeping = tempvar_;
     } else if (choice == 7) {
-      choise_handler(&Margin);
+      choise_handler(&softMargin);
     }
     // if (choice == 1) {
     //   Serial.println("Old value of critical_zone = " + critical_zone);
@@ -486,11 +425,11 @@ void inputHandler(int choice) {
       if (choice == 1) {
         servo_Rotaion = false;
         Serial.println(F("servo_Rotaion = false"));
-        Margin = 200;
+        softMargin = 200;
       } else if (choice == 2) {
         servo_Rotaion = true;
         Serial.println(F("servo_Rotaion = true"));
-        Margin = 350;
+        softMargin = 350;
       } else if (choice == 3) {
         Serial.println(F("------------------------------------------"));
         Serial.println(F("Enter angle to move servo to : "));
@@ -540,7 +479,7 @@ void inputHandler(int choice) {
       choice = getString().toInt();
       if (choice == 1) {
         AlertStatus = 4;
-        Margin = 350;
+        softMargin = 350;
         BuzzerBeeping = false;
         servo_Rotaion = true;
         alarm_time = 3000;
@@ -557,7 +496,7 @@ void inputHandler(int choice) {
               AlertStatus == 6 || AlertStatus == 7)) {
           Serial.println(F("Invalid choice"));
         } else {
-          Margin = 200;
+          softMargin = 200;
           BuzzerBeeping = true;
           servo_Rotaion = false;
           alarm_time = 10000; // 10 seconds
@@ -605,10 +544,6 @@ void inputHandler(int choice) {
       choice = getString().toInt();
       TestStream(choice);
     }
-  } else if (choice == 98) {
-    AlertStatus = 98;
-  } else if (choice == 980) {
-    AlertStatus = 4;
   }
   choice = 0;
   Serial.println(F("Handler out"));
@@ -622,7 +557,6 @@ bool change_Detector(int value_to_be_compare, int previous_value, int margin) {
   }
 }
 void setup() {
-  AlertStatus = 98;
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
   pinMode(pin3, OUTPUT);
@@ -658,43 +592,23 @@ void loop() {
       inputHandler(choice);
     }
   }
-  if (AlertStatus != 98) {
-    // check_gy_sensor(true);
-    if (AlertStatus != 8) {
-      if (servo_Rotaion) {
-        servoRotation();
-        update_distance(false);
-      } else if (AlertStatus != 5 && AlertStatus != 8) {
-        update_distance();
-      }
-      if (!servo_Rotaion && (AlertStatus >= 4 && AlertStatus <= 7)) {
-        temp_send_if_servo_off++;
-        if (temp_send_if_servo_off % 30 == 0) {
-          check_gy_sensor(true);
-          temp_send_if_servo_off = 0;
-        } else {
-          check_gy_sensor(false);
-        }
-      }
+  // check_gy_sensor(true);
+  if (AlertStatus != 8) {
+    if (servo_Rotaion) {
+      servoRotation();
+      update_distance(false);
+    } else if (AlertStatus != 5 && AlertStatus != 8) {
+      update_distance();
     }
-    // Clears the trigPin condition
-
-    //  check_warning_distance();
-    //  check_critical_distance();2
-    // temp_alrm_time = alarm_time;
-  } else if (AlertStatus == 98) {
-    {
+    if (!servo_Rotaion && (AlertStatus >= 4 && AlertStatus <= 7)) {
       temp_send_if_servo_off++;
-      if (temp_send_if_servo_off % 3 == 0) {
+      if (temp_send_if_servo_off % 100 == 0) {
         check_gy_sensor(true);
         temp_send_if_servo_off = 0;
       } else {
         check_gy_sensor(false);
       }
     }
-  } else {
-    Serial.println(F("Unknown error code Dump"));
-    delay(5000);
   }
 }
 void servoRotation() {
@@ -721,7 +635,7 @@ void servoRotation() {
       }
       // Serial.println(F("gyro out"));
 
-      Serial.print("Angle : " + String(pos) + " -> ");
+      //   Serial.print("Angle : " + String(pos) + " -> ");
 
       update_distance(true);
       // Serial.println(F("update_distance out"));
@@ -747,7 +661,7 @@ void servoRotation() {
         check_gy_sensor(false);
       }
 
-      Serial.print("Angle : " + String(pos) + " -> ");
+      //   Serial.print("Angle : " + String(pos) + " -> ");
 
       update_distance(true);
     }
@@ -773,6 +687,9 @@ void servoRotation() {
 }
 void update_distance(bool check) {
   update_distance();
+  if (check) {
+    Serial.print("Angle : " + String(pos) + " -> ");
+  }
   Serial.print(F("D1 : "));
   Serial.print(distance / 2.54);
   Serial.print(F(", D2 : "));
@@ -841,7 +758,6 @@ void update_distance(bool check) {
     }
   }
 }
-
 void beep() {
   //   int temp_alrm_time = beep_for;
   digitalWrite(warning_zone_Led, HIGH);
@@ -954,127 +870,4 @@ void update_distance() {
   digitalWrite(trigPin2, LOW);
   duration2 = pulseIn(echoPin2, HIGH);
   distance2 = duration2 * 0.034 / 2;
-}
-int change_detector(int val1, int val2) {
-  int value3 = val1 - val2;
-  if (value3 < 0) {
-    return value3 * -1;
-  } else {
-    return value3;
-  }
-}
-void trainModle() {
-  Serial.println("Training model...");
-  delay(1000);
-  Serial.println("Stabiliz device for best model ...");
-  delay(2000);
-  int Shocked_lowestValue = 0, Stable_highestValue = 0;
-  int pre_X = 0, pre_Y = 0, pre_Z = 0;
-  int tempAvg = 0;
-  //   for (int j = 0; j < trainTime; j++) {
-  for (int i = 0; i < trainTime * 10; i++) {
-    if (i % 2 == 0) {
-      Serial.print(".");
-    }
-    if (i % 10 == 0) {
-      Serial.print(String(i));
-    }
-    Wire.beginTransmission(MPU_ADDR);
-    Wire.write(0x3B);
-    Wire.endTransmission(false);
-    Wire.requestFrom(MPU_ADDR, 7 * 2, true);
-    accelerometer_x = Wire.read() << 8 | Wire.read();
-    accelerometer_y = Wire.read() << 8 | Wire.read();
-    accelerometer_z = Wire.read() << 8 | Wire.read();
-    tempAvg = ((change_detector(accelerometer_x, pre_X) +
-                change_detector(accelerometer_y, pre_Y) +
-                change_detector(accelerometer_z, pre_Z)) /
-               3);
-    delay(100);
-    if (tempAvg > Stable_highestValue && i != 0) {
-      Stable_highestValue = tempAvg;
-      Serial.print(" SH_Value " + String(Stable_highestValue) + " ");
-    }
-    pre_X = accelerometer_x;
-    pre_Y = accelerometer_y;
-    pre_Z = accelerometer_z;
-  }
-  //   }
-  Serial.println("");
-  Serial.println("Done with data collection for stable position");
-  Serial.println("Stable_highestValue: " + String(Stable_highestValue));
-  int stable_peak =
-      Stable_highestValue +
-      sqrt(Stable_highestValue + getDigitCout(Stable_highestValue));
-
-  Serial.println("Stable_peak: " + String(stable_peak));
-
-  Serial.println("Getting data for unstable position");
-
-  for (int shock_input = 1; shock_input <= 5; shock_input++) {
-    delay(300);
-    Serial.println("Give Shock NO : " + String(shock_input));
-    int tempAvg = 0;
-    do {
-      Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x3B);
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU_ADDR, 7 * 2, true);
-      accelerometer_x = Wire.read() << 8 | Wire.read();
-      accelerometer_y = Wire.read() << 8 | Wire.read();
-      accelerometer_z = Wire.read() << 8 | Wire.read();
-      pre_X = accelerometer_x;
-      pre_Y = accelerometer_y;
-      pre_Z = accelerometer_z;
-
-      delay(50);
-      Wire.beginTransmission(MPU_ADDR);
-      Wire.write(0x3B);
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU_ADDR, 7 * 2, true);
-      accelerometer_x = Wire.read() << 8 | Wire.read();
-      accelerometer_y = Wire.read() << 8 | Wire.read();
-      accelerometer_z = Wire.read() << 8 | Wire.read();
-      tempAvg = ((change_detector(accelerometer_x, pre_X) +
-                  change_detector(accelerometer_y, pre_Y) +
-                  change_detector(accelerometer_z, pre_Z)) /
-                 3);
-
-    } while (tempAvg < stable_peak);
-    Serial.println("(Data recorded) Shocked value: " + String(tempAvg));
-    if (Shocked_lowestValue == 0) {
-      Shocked_lowestValue = tempAvg;
-      Serial.println("-->> #update: Shocked_lowestValue: " +
-                     String(Shocked_lowestValue));
-    } else if (tempAvg < Shocked_lowestValue) {
-      Shocked_lowestValue = tempAvg;
-      Serial.println("-->> Update: Shocked_lowestValue: " +
-                     String(Shocked_lowestValue));
-    }
-  }
-
-  Serial.println("Over writing previous_value: (" + String(Margin) + ")" +
-                 "with new value: (" + String(newMargin) + ")");
-  //   Serial.println("Model trained successfully");
-}
-int getDigitCout(int number) {
-  int count = 0;
-  while (number != 0) {
-    number /= 10;
-    ++count;
-  }
-  return count;
-}
-bool ML_function(int G_X, int G_Y, int G_Z) { return false; }
-int gyro_avg(int X_, int Y_, int Z_) {
-  if (X_ < 0) {
-    X_ = X_ * -1;
-  }
-  if (Y_ < 0) {
-    Y_ = Y_ * -1;
-  }
-  if (Z_ < 0) {
-    Z_ = Z_ * -1;
-  }
-  return (X_ + Y_ + Z_) / 3;
 }
