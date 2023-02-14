@@ -635,7 +635,7 @@ void servoRotation() {
       }
       // Serial.println(F("gyro out"));
 
-      Serial.print("Angle : " + String(pos) + " -> ");
+      //   Serial.print("Angle : " + String(pos) + " -> ");
 
       update_distance(true);
       // Serial.println(F("update_distance out"));
@@ -661,7 +661,7 @@ void servoRotation() {
         check_gy_sensor(false);
       }
 
-      Serial.print("Angle : " + String(pos) + " -> ");
+      //   Serial.print("Angle : " + String(pos) + " -> ");
 
       update_distance(true);
     }
@@ -687,6 +687,9 @@ void servoRotation() {
 }
 void update_distance(bool check) {
   update_distance();
+  if (check) {
+    Serial.print("Angle : " + String(pos) + " -> ");
+  }
   Serial.print(F("D1 : "));
   Serial.print(distance / 2.54);
   Serial.print(F(", D2 : "));
