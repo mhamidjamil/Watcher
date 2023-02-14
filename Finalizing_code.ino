@@ -384,7 +384,6 @@ void inputHandler(int choice) {
     Serial.println(F("Enter 6 for aggressive monitoring mode"));
     choice = getString().toInt();
     if (choice == 1) { // LED work
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 enable warning led blynk "));
       Serial.println(F("Enter 2 disable warning led blynk "));
       Serial.println(F("Enter 3 Turn LED on "));
@@ -400,7 +399,6 @@ void inputHandler(int choice) {
         digitalWrite(warning_zone_Led, LOW);
       }
     } else if (choice == 2) { // buzzer work
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 to Turn Buzzer on "));
       Serial.println(F("Enter 2 to turn onbeeping  "));
       Serial.println(F("Enter 3 to force off Buzzer  "));
@@ -417,7 +415,6 @@ void inputHandler(int choice) {
         BuzzerBeeping = false;
       }
     } else if (choice == 3) { // servo work
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 to stop servo_Rotaion"));
       Serial.println(F("Enter 2 to Start servo_Rotaion"));
       Serial.println(F("Enter 3 to move servo to specific angle"));
@@ -431,7 +428,6 @@ void inputHandler(int choice) {
         Serial.println(F("servo_Rotaion = true"));
         softMargin = 350;
       } else if (choice == 3) {
-        Serial.println(F("------------------------------------------"));
         Serial.println(F("Enter angle to move servo to : "));
         choice = getString().toInt();
         Serial.println(F("For how long : "));
@@ -440,7 +436,6 @@ void inputHandler(int choice) {
         delay(delay_temp);
       }
     } else if (choice == 4) {
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 to stop gyro"));
       Serial.println(F("Enter 2 to Start gyro"));
       choice = getString().toInt();
@@ -460,7 +455,6 @@ void inputHandler(int choice) {
       //  Alert Status = 6: Alert when Gyro and d1's value changes
       //  Alert Status = 7: Alert when Gyro and d2's value changes
       // Alert Status = 8: No Alerts
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter New value : "));
       Serial.println(F("Alert when d1's value changes"));
       Serial.println(F("Alert when d2's value changes"));
@@ -473,7 +467,6 @@ void inputHandler(int choice) {
 
       AlertStatus = getString().toInt();
     } else if (choice == 6) { // Aggresive monitoring
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 to stop aggressive monitoring"));
       Serial.println(F("Enter 2 to Start aggressive monitoring"));
       choice = getString().toInt();
@@ -485,7 +478,6 @@ void inputHandler(int choice) {
         alarm_time = 3000;
         // Serial.println(F("aggressive_monitoring = false"));
       } else if (choice == 2) {
-        Serial.println(F("------------------------------------------"));
         Serial.println(F("Enter 1 to active on D1 (stop)"));
         Serial.println(F("Enter 2 to active on D2 (stop)"));
         Serial.println(F("Enter 5 to active on just Gyro (Servo_stop)"));
@@ -505,20 +497,17 @@ void inputHandler(int choice) {
       }
     }
   } else if (choice == 3) { // RF module
-    Serial.println(F("------------------------------------------"));
     Serial.println(F("Enter 1 to Force pin high/low"));
     Serial.println(F("Enter 2 to send Binary data"));
     Serial.println(F("Enter 3 to test all output pins"));
     choice = getString().toInt();
     if (choice == 1) {
       int tempdaly;
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter pin number"));
       choice = getString().toInt();
       Serial.println(F("Enter Delay : "));
       tempdaly = getString().toInt();
       int choice2;
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter 1 to force pin high"));
       Serial.println(F("Enter 2 to force pin low"));
       choice2 = getString().toInt();
@@ -532,14 +521,12 @@ void inputHandler(int choice) {
         digitalWrite(getPinNumber(choice), HIGH);
       }
     } else if (choice == 2) {
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter decimal Number (<16) : "));
       choice = getString().toInt();
 
       Serial.println("Sending " + String(choice));
       BinaryManager(choice);
     } else if (choice == 3) {
-      Serial.println(F("------------------------------------------"));
       Serial.println(F("Enter delay : "));
       choice = getString().toInt();
       TestStream(choice);
@@ -843,6 +830,7 @@ String getString() {
     }
     // }
   }
+  Serial.println(F("------------------------------------------"));
   return sdata;
 }
 void choise_handler(int *p) {
