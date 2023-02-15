@@ -1,14 +1,6 @@
 // # suggestion is to use d1[size-3]
-//$ 06:05 PM 15/FEB/22
-// byte AlertStatus = 4;
-//  Alert Status = 1: Alert when d1's value changes
-//  Alert Status = 2: Alert when d2's value changes
-//  Alert Status = 3: Alert when d1's or d2's value changes
-//  Alert Status = 4: Alert when Gyro and d1's or d2's value changes
-//  Alert Status = 5: Alert when Gyro value changes
-//  Alert Status = 6: Alert when Gyro and d1's value changes
-//  Alert Status = 7: Alert when Gyro and d2's value changes
-// Alert Status = 8: No Alerts
+// # working on complete commond at once
+//$ 08:36 -> (??:??) PM 15/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -50,6 +42,7 @@ void custom_beep(int beep_for, int delay_bt_beep);
 void blynk(int defined_delay);
 String getString();
 void choise_handler(int *p);
+void choise_handler(byte *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
 int change_detector(int val1, int val2);
 // # 20+ functions Defined =====================================
@@ -76,7 +69,6 @@ int distance;  // variable for the distance measurement
 
 long duration2; // variable for the duration of sound wave travel
 int distance2;  // variable for the distance measurement
-//  +---------------------------------------------------------------------------------------->
 //  +-------------------------------------------->  Ultrasound Ends <----------
 int aggressive_monitoring = 0;
 // `------------------------------------------->  RF sender config  <----------
@@ -320,11 +312,13 @@ void check_gy_sensor(bool print_records, int neg_motion) {
   mainY = accelerometer_y;
 }
 //~--------------------------------------------------->  gyro ends <----------
-// % ----------------------------------------------------------------------
+// % -------------------------------------------------------------------------
 bool inputHandler(int choice) {
   Serial.println(F("input Handler call"));
   // choice = Serial.parseInt();
-  // choice = getString().toInt();
+  // if (choice > 10) {
+  //   choice = getString().toInt();
+  // }
   if (choice == 1) { // to set new values of variables
     Serial.println(F("Changing setting...."));
     Serial.println(F("Avaiable variable to change : "));
@@ -333,8 +327,7 @@ bool inputHandler(int choice) {
     Serial.println("3: alarm_time ," + String(alarm_time));
     // Serial.println("4: input_timeout ," + String(input_timeout));
     Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
-    Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
-    Serial.print("7: negligible_motion , ");
+    Serial.print("6: negligible_motion , ");
     if (servo_Rotaion) {
       Serial.println(negligible_motion);
     } else {
@@ -347,9 +340,9 @@ bool inputHandler(int choice) {
     Serial.println("we got : " + String(choice));
     if (choice == 1) {
       // Serial.println("old value : " + String(critical_zone));
-      choice = critical_zone;
-      choise_handler(&choice);
-      critical_zone = choice;
+      // choice = critical_zone;
+      choise_handler(&critical_zone);
+      // critical_zone = choice;
       // Serial.println("new value: " + String(critical_zone));
     } else if (choice == 2) {
       choice = warning_zone;
@@ -367,19 +360,6 @@ bool inputHandler(int choice) {
       choise_handler(&rotation_speed_delay);
       // rotation_speed_delay = choice;
     } else if (choice == 6) {
-      if (BuzzerBeeping) {
-        choice = 1;
-      } else {
-        choice = 0;
-      }
-      choise_handler(&choice);
-      if (choice == 1) {
-        BuzzerBeeping = true;
-      } else {
-        BuzzerBeeping = false;
-      }
-      // BuzzerBeeping = tempvar_;
-    } else if (choice == 7) {
       choise_handler(&negligible_motion);
     } else {
       Serial.println("Invalid choice");
@@ -558,6 +538,9 @@ bool inputHandler(int choice) {
       Serial.println(F("Invalid choice"));
       return false;
     }
+  } else {
+    Serial.println(F("Invalid choice"));
+    return false;
   }
   choice = 0;
   Serial.println(F("Handler out"));
@@ -893,6 +876,15 @@ String getString() {
   return sdata;
 }
 void choise_handler(int *p) {
+  Serial.print(F("Enter new value : "));
+  int newvalue = getString().toInt();
+  Serial.println(newvalue);
+  Serial.print("Value Changed : " + String(*p) + "-->");
+  *p = newvalue;
+  Serial.println(String(*p));
+  // Serial.println("new value : " + String(*p));
+}
+void choise_handler(byte *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
   Serial.println(newvalue);

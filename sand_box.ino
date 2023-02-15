@@ -42,6 +42,7 @@ void custom_beep(int beep_for, int delay_bt_beep);
 void blynk(int defined_delay);
 String getString();
 void choise_handler(int *p);
+void choise_handler(byte *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
 int change_detector(int val1, int val2);
 // # 20+ functions Defined =====================================
@@ -326,8 +327,7 @@ bool inputHandler(int choice) {
     Serial.println("3: alarm_time ," + String(alarm_time));
     // Serial.println("4: input_timeout ," + String(input_timeout));
     Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
-    Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
-    Serial.print("7: negligible_motion , ");
+    Serial.print("6: negligible_motion , ");
     if (servo_Rotaion) {
       Serial.println(negligible_motion);
     } else {
@@ -339,15 +339,9 @@ bool inputHandler(int choice) {
     choice = getString().toInt();
     Serial.println("we got : " + String(choice));
     if (choice == 1) {
-      // Serial.println("old value : " + String(critical_zone));
-      choice = critical_zone;
-      choise_handler(&choice);
-      critical_zone = choice;
-      // Serial.println("new value: " + String(critical_zone));
+      choise_handler(&critical_zone);
     } else if (choice == 2) {
-      choice = warning_zone;
-      choise_handler(&choice);
-      warning_zone = choice;
+      choise_handler(&warning_zone);
     } else if (choice == 3) {
       choise_handler(&alarm_time);
     }
@@ -360,19 +354,6 @@ bool inputHandler(int choice) {
       choise_handler(&rotation_speed_delay);
       // rotation_speed_delay = choice;
     } else if (choice == 6) {
-      if (BuzzerBeeping) {
-        choice = 1;
-      } else {
-        choice = 0;
-      }
-      choise_handler(&choice);
-      if (choice == 1) {
-        BuzzerBeeping = true;
-      } else {
-        BuzzerBeeping = false;
-      }
-      // BuzzerBeeping = tempvar_;
-    } else if (choice == 7) {
       choise_handler(&negligible_motion);
     } else {
       Serial.println("Invalid choice");
@@ -889,6 +870,15 @@ String getString() {
   return sdata;
 }
 void choise_handler(int *p) {
+  Serial.print(F("Enter new value : "));
+  int newvalue = getString().toInt();
+  Serial.println(newvalue);
+  Serial.print("Value Changed : " + String(*p) + "-->");
+  *p = newvalue;
+  Serial.println(String(*p));
+  // Serial.println("new value : " + String(*p));
+}
+void choise_handler(byte *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
   Serial.println(newvalue);
