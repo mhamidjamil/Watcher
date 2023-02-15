@@ -1,6 +1,6 @@
 // ` void loop fixed (ML part have to be added in gyro monitoring)
 // # suggestion is to use d1[size-3] but i need more time as it is already 4 AM
-//$ 12:29 AM 15/FEB/22
+//$ 06:05 PM 15/FEB/22
 byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes
 //  Alert Status = 2: Alert when d2's value changes
@@ -284,11 +284,11 @@ void check_gy_sensor(bool print_records, int neg_motion) {
        2) > neg_motion) {
     if (!print_records) {
       Serial.print(F("!@ aX = "));
-      Serial.print(global_X);
+      Serial.print(accelerometer_x);
       Serial.print(F(" -> "));
       Serial.print(mainX);
       Serial.print(F(" | aY = "));
-      Serial.print(global_Y);
+      Serial.print(accelerometer_y);
       Serial.print(F(" -> "));
       Serial.print(mainY);
       // Serial.print(F(" | aZ = "));
@@ -299,8 +299,8 @@ void check_gy_sensor(bool print_records, int neg_motion) {
                            2)) +
                    ") ");
       Serial.println(F(" #"));
-      global_X = mainX;
-      global_Y = mainY;
+      // global_X = mainX;
+      // global_Y = mainY;
       // global_Z = mainZ;
     }
     if (mainX != 0 || mainY != 0) {
@@ -308,14 +308,13 @@ void check_gy_sensor(bool print_records, int neg_motion) {
         Serial.println(F("( @_ignored_@ )"));
         gy_beep++;
       } else if (gy_beep >= 1) {
-        if (AlertStatus > 3 && AlertStatus != 8) {
-          if (servo_Rotaion) {
-            custom_beep(2000, 200);
-          } else {
-            beep();
-          }
-          sendRFmsg(1);
+        if (servo_Rotaion) {
+          custom_beep(2000, 200);
+        } else {
+          beep();
         }
+        sendRFmsg(1);
+
         Serial.println(F("#######################"));
         gy_beep = 0;
       }
