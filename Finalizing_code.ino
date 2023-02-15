@@ -52,14 +52,15 @@ void blynk(int defined_delay);
 String getString();
 void choise_handler(int *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
+int change_detector(int val1, int val2);
 // # 20+ functions Defined =====================================
 
 //  +---------------------------------------------------> Ultrasound start  <---
 byte critical_zone = 25;
-byte critical_zone_buzzer = 4;
+byte Buzzer = 4;
 
 byte warning_zone = 50;
-byte warning_zone_Led = 6;
+byte LED = 6;
 
 int alarm_time = 2000;
 // int temp_alrm_time = alarm_time;
@@ -251,23 +252,20 @@ void check_gy_sensor(bool print_records, int neg_motion) {
   Wire.write(
       0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and
              // MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
-  Wire.endTransmission(
-      false); // the parameter indicates that the Arduino will send a restart.
-              // As a result, the connection is kept active.
-  Wire.requestFrom(MPU_ADDR, 7 * 2,
-                   true); // request a total of 7*2=14 registers
+  Wire.endTransmission(false);
+  // the parameter indicates that the Arduino will send a restart.
+  // As a result, the connection is kept active.
+  Wire.requestFrom(MPU_ADDR, 7 * 2, true);
+  // request a total of 7*2=14 registers
 
   // "Wire.read()<<8 | Wire.read();" means two registers are read and stored
   // in the same variable
-  accelerometer_x =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H)
-                                      // and 0x3C (ACCEL_XOUT_L)
-  accelerometer_y =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H)
-                                      // and 0x3E (ACCEL_YOUT_L)
-  accelerometer_z =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H)
-                                      // and 0x40 (ACCEL_ZOUT_L)
+  accelerometer_x = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
+  accelerometer_y = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
+  accelerometer_z = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
   if (print_records) {
     Serial.print(F("--->aX = "));
     Serial.print(convert_int16_to_str(accelerometer_x));
@@ -278,11 +276,12 @@ void check_gy_sensor(bool print_records, int neg_motion) {
     Serial.println(F(" "));
   }
 
-  mainX = accelerometer_x;
-  mainY = accelerometer_y;
   // mainZ = accelerometer_z;
-  if (((change_Detector(mainX, global_X, neg_motion)) ||
-       (change_Detector(mainY, global_Y, neg_motion)))) {
+  // if (((change_Detector(mainX, global_X, neg_motion)) ||
+  //      (change_Detector(mainY, global_Y, neg_motion))))
+  if (((change_detector(accelerometer_x, mainX) +
+        change_detector(accelerometer_y, mainY)) /
+       2) > neg_motion) {
     if (!print_records) {
       Serial.print(F("!@ aX = "));
       Serial.print(global_X);
@@ -294,6 +293,11 @@ void check_gy_sensor(bool print_records, int neg_motion) {
       Serial.print(mainY);
       // Serial.print(F(" | aZ = "));
       // Serial.print(convert_int16_to_str(accelerometer_z));
+      Serial.print(" avg change (" +
+                   String(((change_detector(accelerometer_x, mainX) +
+                            change_detector(accelerometer_y, mainY)) /
+                           2)) +
+                   ") ");
       Serial.println(F(" #"));
       global_X = mainX;
       global_Y = mainY;
@@ -317,6 +321,8 @@ void check_gy_sensor(bool print_records, int neg_motion) {
       }
     }
   }
+  mainX = accelerometer_x;
+  mainY = accelerometer_y;
 }
 //~--------------------------------------------------->  gyro ends <----------
 // % ----------------------------------------------------------------------
@@ -400,9 +406,9 @@ void inputHandler(int choice) {
       } else if (choice == 2) {
         warningLED = false;
       } else if (choice == 3) {
-        digitalWrite(warning_zone_Led, HIGH);
+        digitalWrite(LED, HIGH);
       } else if (choice == 4) {
-        digitalWrite(warning_zone_Led, LOW);
+        digitalWrite(LED, LOW);
       }
     } else if (choice == 2) { // buzzer work
       Serial.println(F("Enter 1 to Turn Buzzer on "));
@@ -412,9 +418,9 @@ void inputHandler(int choice) {
       if (choice == 1) {
         Serial.println(F("Enter delay time "));
         choice = getString().toInt();
-        digitalWrite(critical_zone_buzzer, HIGH);
+        digitalWrite(Buzzer, HIGH);
         delay(choice);
-        digitalWrite(critical_zone_buzzer, LOW);
+        digitalWrite(Buzzer, LOW);
       } else if (choice == 2) {
         BuzzerBeeping = true;
       } else if (choice == 3) {
@@ -535,8 +541,8 @@ void setup() {
   digitalWrite(pin4, HIGH);
   pinMode(LED_BUILTIN, OUTPUT);
   Myservo.attach(2);
-  pinMode(warning_zone_Led, OUTPUT);
-  pinMode(critical_zone_buzzer, OUTPUT);
+  pinMode(LED, OUTPUT);
+  pinMode(Buzzer, OUTPUT);
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin, INPUT);  // Sets the echoPin as an INPUT
 
@@ -615,7 +621,7 @@ void loop() {
       }
     }
     if (gyro_monitoring) {
-      check_gy_sensor(false, negligible_motion - 100);
+      check_gy_sensor(false, negligible_motion - 50);
     }
   }
 }
@@ -768,46 +774,46 @@ void update_distance(bool check) {
 }
 void beep() {
   //   int temp_alrm_time = beep_for;
-  digitalWrite(warning_zone_Led, HIGH);
+  digitalWrite(LED, HIGH);
   int temp_time = alarm_time;
   for (; temp_time > 0;
        temp_time -= 400) { // decrement should be 100 (50(HIGH)+50(LOW))
     // but i use 400 to finish it earlier
     if (BuzzerBeeping) {
-      digitalWrite(critical_zone_buzzer, HIGH);
+      digitalWrite(Buzzer, HIGH);
       delay(50);
     } else {
-      digitalWrite(warning_zone_Led, LOW);
+      digitalWrite(LED, LOW);
       delay(50);
-      digitalWrite(warning_zone_Led, HIGH);
+      digitalWrite(LED, HIGH);
       delay(50);
       temp_time -= 50;
     }
-    digitalWrite(critical_zone_buzzer, LOW);
+    digitalWrite(Buzzer, LOW);
     delay(50);
   }
-  digitalWrite(warning_zone_Led, LOW);
+  digitalWrite(LED, LOW);
 }
 void custom_beep(int beep_for, int delay_bt_beep) {
-  digitalWrite(warning_zone_Led, HIGH);
+  digitalWrite(LED, HIGH);
   for (; beep_for > 0;
        beep_for -=
        (delay_bt_beep * 2)) { // decrement should be 100 (50(HIGH)+50(LOW))
     // but i use 400 to finish it earlier
     if (BuzzerBeeping) {
-      digitalWrite(critical_zone_buzzer, HIGH);
+      digitalWrite(Buzzer, HIGH);
       delay(50);
     } else {
-      digitalWrite(warning_zone_Led, LOW);
+      digitalWrite(LED, LOW);
       delay(50);
-      digitalWrite(warning_zone_Led, HIGH);
+      digitalWrite(LED, HIGH);
       delay(50);
       alarm_time -= 50;
     }
-    digitalWrite(critical_zone_buzzer, LOW);
+    digitalWrite(Buzzer, LOW);
     delay(50);
   }
-  digitalWrite(warning_zone_Led, LOW);
+  digitalWrite(LED, LOW);
 }
 void blynk(int defined_delay) {
   digitalWrite(LED_BUILTIN, HIGH);
@@ -816,9 +822,9 @@ void blynk(int defined_delay) {
                LOW); // turn the LED off by making the voltage LOW
   // delay(1000);
   if (warningLED) {
-    digitalWrite(warning_zone_Led, HIGH);
+    digitalWrite(LED, HIGH);
     delay(defined_delay);
-    digitalWrite(warning_zone_Led, LOW);
+    digitalWrite(LED, LOW);
   }
 }
 String getString() {
@@ -888,5 +894,20 @@ bool change_Detector(int value_to_be_compare, int previous_value, int margin) {
     return false;
   } else {
     return true;
+  }
+}
+int change_detector(int val1, int val2) {
+  // int value3 = val1 - val2;
+  // normalizing values for better results
+  if (val1 < 0) {
+    val1 = -val1;
+  }
+  if (val2 < 0) {
+    val2 = -val2;
+  }
+  if ((val1 - val2) < 0) {
+    return ((val1 - val2) * -1);
+  } else {
+    return (val1 - val2);
   }
 }

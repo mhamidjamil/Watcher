@@ -265,15 +265,12 @@ void check_gy_sensor(bool print_records) {
 
   // "Wire.read()<<8 | Wire.read();" means two registers are read and stored in
   // the same variable
-  accelerometer_x =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H)
-                                      // and 0x3C (ACCEL_XOUT_L)
-  accelerometer_y =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3D (ACCEL_YOUT_H)
-                                      // and 0x3E (ACCEL_YOUT_L)
-  accelerometer_z =
-      Wire.read() << 8 | Wire.read(); // reading registers: 0x3F (ACCEL_ZOUT_H)
-                                      // and 0x40 (ACCEL_ZOUT_L)
+  accelerometer_x = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
+  accelerometer_y = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3D (ACCEL_YOUT_H) and 0x3E (ACCEL_YOUT_L)
+  accelerometer_z = Wire.read() << 8 | Wire.read();
+  // reading registers: 0x3F (ACCEL_ZOUT_H) and 0x40 (ACCEL_ZOUT_L)
   if (print_records) {
     Serial.print(F("--->aX = "));
     Serial.print(convert_int16_to_str(accelerometer_x));
@@ -956,11 +953,18 @@ void update_distance() {
   distance2 = duration2 * 0.034 / 2;
 }
 int change_detector(int val1, int val2) {
-  int value3 = val1 - val2;
-  if (value3 < 0) {
-    return value3 * -1;
+  // int value3 = val1 - val2;
+  // normalizing values for better results
+  if (val1 < 0) {
+    val1 = -val1;
+  }
+  if (val2 < 0) {
+    val2 = -val2;
+  }
+  if ((val1 - val2) < 0) {
+    return ((val1 - val2) * -1);
   } else {
-    return value3;
+    return (val1 - val2);
   }
 }
 void trainModle() {
