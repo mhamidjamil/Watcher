@@ -324,7 +324,9 @@ void check_gy_sensor(bool print_records, int neg_motion) {
 bool inputHandler(int choice) {
   Serial.println(F("input Handler call"));
   // choice = Serial.parseInt();
-  // choice = getString().toInt();
+  // if (choice > 10) {
+  //   choice = getString().toInt();
+  // }
   if (choice == 1) { // to set new values of variables
     Serial.println(F("Changing setting...."));
     Serial.println(F("Avaiable variable to change : "));
@@ -558,6 +560,9 @@ bool inputHandler(int choice) {
       Serial.println(F("Invalid choice"));
       return false;
     }
+  } else {
+    Serial.println(F("Invalid choice"));
+    return false;
   }
   choice = 0;
   Serial.println(F("Handler out"));
