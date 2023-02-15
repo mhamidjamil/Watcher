@@ -1,7 +1,6 @@
-// ` void loop fixed (ML part have to be added in gyro monitoring)
-// # suggestion is to use d1[size-3] but i need more time as it is already 4 AM
+// # suggestion is to use d1[size-3]
 //$ 06:05 PM 15/FEB/22
-byte AlertStatus = 4;
+// byte AlertStatus = 4;
 //  Alert Status = 1: Alert when d1's value changes
 //  Alert Status = 2: Alert when d2's value changes
 //  Alert Status = 3: Alert when d1's or d2's value changes
@@ -41,7 +40,7 @@ void TestStream(int delay_);
 void BinaryManager(int number);
 void sendRFmsg(int msgCode);
 void check_gy_sensor(bool print_records);
-void inputHandler(int choice);
+bool inputHandler(int choice);
 void servoRotation();
 void update_distance(bool check);
 // void check_critical_distance();
@@ -233,7 +232,8 @@ int16_t accelerometer_x, accelerometer_y,
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0;
-int negligible_motion = 350, global_X = 0, global_Y = 0, global_Z = 0;
+int negligible_motion = 350;
+// , global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(
     int16_t i) { // converts int16 to string. Moreover, resulting strings will
@@ -243,15 +243,11 @@ char *convert_int16_to_str(
 }
 int gy_beep = 0;
 void check_gy_sensor(bool print_records, int neg_motion) {
-  // if (servo_Rotaion)
-  // {
-  //     servo_Rotaion = false;
-  // }
   delay(100);
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(
-      0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and
-             // MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
+  Wire.write(0x3B);
+  // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and
+  // MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
   Wire.endTransmission(false);
   // the parameter indicates that the Arduino will send a restart.
   // As a result, the connection is kept active.
@@ -325,7 +321,7 @@ void check_gy_sensor(bool print_records, int neg_motion) {
 }
 //~--------------------------------------------------->  gyro ends <----------
 // % ----------------------------------------------------------------------
-void inputHandler(int choice) {
+bool inputHandler(int choice) {
   Serial.println(F("input Handler call"));
   // choice = Serial.parseInt();
   // choice = getString().toInt();
@@ -338,7 +334,12 @@ void inputHandler(int choice) {
     // Serial.println("4: input_timeout ," + String(input_timeout));
     Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
     Serial.println("6: BuzzerBeeping ," + String(BuzzerBeeping));
-    Serial.println("7: negligible_motion ," + String(negligible_motion));
+    Serial.print("7: negligible_motion , ");
+    if (servo_Rotaion) {
+      Serial.println(negligible_motion);
+    } else {
+      Serial.println(negligible_motion - 100);
+    }
     // Serial.println("6: display_reading_after ," +
     // String(display_reading_after));
 
@@ -380,6 +381,9 @@ void inputHandler(int choice) {
       // BuzzerBeeping = tempvar_;
     } else if (choice == 7) {
       choise_handler(&negligible_motion);
+    } else {
+      Serial.println("Invalid choice");
+      return false;
     }
     // if (choice == 1) {
     //   Serial.println("Old value of critical_zone = " + critical_zone);
@@ -395,10 +399,13 @@ void inputHandler(int choice) {
     Serial.println(F("Enter 5 for aggressive monitoring mode"));
     choice = getString().toInt();
     if (choice == 1) { // LED work
-      Serial.println(F("Enter 1 enable warning led blynk "));
-      Serial.println(F("Enter 2 disable warning led blynk "));
-      Serial.println(F("Enter 3 Turn LED on "));
-      Serial.println(F("Enter 4 Turn LED off "));
+      if (!warningLED) {
+        Serial.println(F("Enter 1 to enable warning led blynk "));
+      } else if (warningLED) {
+        Serial.println(F("Enter 2 to disable warning led blynk "));
+      }
+      Serial.println(F("Enter 3 to Turn LED on "));
+      Serial.println(F("Enter 4 to Turn LED off "));
       choice = getString().toInt();
       if (choice == 1) {
         warningLED = true;
@@ -408,47 +415,63 @@ void inputHandler(int choice) {
         digitalWrite(LED, HIGH);
       } else if (choice == 4) {
         digitalWrite(LED, LOW);
+      } else {
+        Serial.println(F("Invalid choice"));
+        return false;
       }
     } else if (choice == 2) { // buzzer work
-      Serial.println(F("Enter 1 to Turn Buzzer on "));
-      Serial.println(F("Enter 2 to turn onbeeping  "));
-      Serial.println(F("Enter 3 to force off Buzzer  "));
+      if (BuzzerBeeping) {
+        Serial.println(F("Enter 1 to disable BuzzerBeeping "));
+      } else if (!BuzzerBeeping) {
+        Serial.println(F("Enter 2 to enable BuzzerBeeping "));
+      }
+      Serial.println(F("Enter 3 to test buzzer (force on)"));
       choice = getString().toInt();
       if (choice == 1) {
+        BuzzerBeeping = false;
+      } else if (choice == 2) {
+        BuzzerBeeping = true;
+      } else if (choice == 3) {
         Serial.println(F("Enter delay time "));
         choice = getString().toInt();
         digitalWrite(Buzzer, HIGH);
         delay(choice);
         digitalWrite(Buzzer, LOW);
-      } else if (choice == 2) {
-        BuzzerBeeping = true;
-      } else if (choice == 3) {
-        BuzzerBeeping = false;
+      } else {
+        Serial.println(F("Invalid choice"));
+        return false;
       }
     } else if (choice == 3) { // servo work
-      Serial.println(F("Enter 1 to stop servo_Rotaion"));
-      Serial.println(F("Enter 2 to Start servo_Rotaion"));
+      if (servo_Rotaion) {
+        Serial.println(F("Enter 1 to stop servo_Rotaion"));
+      } else if (!servo_Rotaion) {
+        Serial.println(F("Enter 2 to start servo_Rotaion"));
+      }
       Serial.println(F("Enter 3 to move servo to specific angle"));
       choice = getString().toInt();
       if (choice == 1) {
         servo_Rotaion = false;
         Serial.println(F("servo_Rotaion = false"));
-        // negligible_motion = 200;
       } else if (choice == 2) {
         servo_Rotaion = true;
         Serial.println(F("servo_Rotaion = true"));
-        // negligible_motion = 350;
       } else if (choice == 3) {
         Serial.println(F("Enter angle to move servo to : "));
         choice = getString().toInt();
         Serial.println(F("For how long : "));
-        int delay_temp = getString().toInt();
+        choice = getString().toInt();
         Myservo.write(choice);
-        delay(delay_temp);
+        delay(choice);
+      } else {
+        Serial.println(F("Invalid choice"));
+        return false;
       }
     } else if (choice == 4) {
-      Serial.println(F("Enter 1 to stop gyro"));
-      Serial.println(F("Enter 2 to Start gyro"));
+      if (gyro_monitoring) {
+        Serial.println(F("Enter 1 to stop gyro"));
+      } else if (!gyro_monitoring) {
+        Serial.println(F("Enter 2 to Start gyro"));
+      }
       choice = getString().toInt();
       if (choice == 1) {
         gyro_monitoring = false;
@@ -456,6 +479,9 @@ void inputHandler(int choice) {
       } else if (choice == 2) {
         gyro_monitoring = true;
         Serial.println(F("gyro = true"));
+      } else {
+        Serial.println(F("Invalid choice"));
+        return false;
       }
     } else if (choice == 5) { // Aggresive monitoring
       Serial.println(F("Enter 1 to stop aggressive monitoring"));
@@ -465,6 +491,7 @@ void inputHandler(int choice) {
         servo_Rotaion = true;
         BuzzerBeeping = false;
         gyro_monitoring = true;
+        alarm_time /= 2;
         // Serial.println(F("aggressive_monitoring = false"));
       } else if (choice == 2) {
         Serial.println(F("Enter 1 to active on D1 (stop) & gyro off"));
@@ -486,9 +513,12 @@ void inputHandler(int choice) {
         //~ some varaibles have to change there values w.r.t situation
         servo_Rotaion = false;
         BuzzerBeeping = true;
-        alarm_time = 5000;
+        alarm_time = alarm_time * 2;
         // Serial.println(F("aggressive_monitoring = true"));
       }
+    } else {
+      Serial.println(F("Invalid choice"));
+      return false;
     }
   } else if (choice == 3) { // RF module
     Serial.println(F("Enter 1 to Force pin high/low"));
@@ -524,10 +554,14 @@ void inputHandler(int choice) {
       Serial.println(F("Enter delay : "));
       choice = getString().toInt();
       TestStream(choice);
+    } else {
+      Serial.println(F("Invalid choice"));
+      return false;
     }
   }
   choice = 0;
   Serial.println(F("Handler out"));
+  return true;
 }
 void setup() {
   pinMode(pin1, OUTPUT);
@@ -714,8 +748,7 @@ void update_distance(bool check) {
     // Serial.println(", index : " + String(pos / display_reading_after));
     d1[pos / display_reading_after] = (distance / 2.54);
     d2[pos / display_reading_after] = (distance2 / 2.54);
-  } else if (ArraysInitialized && check && servo_Rotaion &&
-             (AlertStatus != 8 && AlertStatus != 5)) {
+  } else if (ArraysInitialized && check && servo_Rotaion) {
     if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
                          softMargin_ultraSound)) ||
         (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]),
@@ -723,8 +756,7 @@ void update_distance(bool check) {
       int msg_code = 0;
       // Serial.println(F("ultra sound change detected"));
       if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
-                           softMargin_ultraSound)) &&
-          (AlertStatus != 2 || AlertStatus != 7 || AlertStatus != 8)) {
+                           softMargin_ultraSound))) {
         // Serial.println(F("ultra sound change detected on D1"));
         if (((distance / 2.54) < 450) &&
             (d1[pos / display_reading_after]) < 450) {
@@ -743,8 +775,7 @@ void update_distance(bool check) {
       }
       if ((change_Detector((distance2 / 2.54),
                            (d2[pos / display_reading_after]),
-                           softMargin_ultraSound)) &&
-          (AlertStatus != 1 || AlertStatus != 6 || AlertStatus != 8)) {
+                           softMargin_ultraSound))) {
         // Serial.println(F("ultra sound change detected on D2"));
         if (((distance2 / 2.54) < 450) &&
             (d2[pos / display_reading_after]) < 450) {
