@@ -20,6 +20,7 @@ byte monitor_on = 0;
 // * ----------------------------------------------------------------------------------------------->    servo ends   <------------
 int choice = 0;
 String String_holder = "";
+int aggressive_monitoring = 0;
 // int input_timeout = 10000;
 // # Functions =============================================
 int getPinNumber(int required_pin);
@@ -76,7 +77,7 @@ int distance;  // variable for the distance measurement
 long duration2; // variable for the duration of sound wave travel
 int distance2;  // variable for the distance measurement
 //  +-------------------------------------------->  Ultrasound Ends <----------
-int aggressive_monitoring = 0;
+
 // `------------------------------------------->  RF sender config  <----------
 #define pin1 5 // Sender pin: 4 and reciver pin: D0 (1st) (Red)
 #define pin2 7 // Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
@@ -489,7 +490,7 @@ bool inputHandler(int choice) {
         Serial.println(F("Enter 4 to active on D1 (Stop) & Gyro"));
         Serial.println(F("Enter 5 to active on D2 (stop) & Gyro"));
         int temp_6 = getString().toInt();
-        Serial.println("input -> ( " + String(choice) + " )");
+        Serial.println("input -> ( " + String(temp_6) + " )");
         if (temp_6 == 1 || temp_6 == 2) {
           gyro_monitoring = false;
         } else if (temp_6 == 3 || temp_6 == 4 || temp_6 == 5) {
@@ -499,11 +500,16 @@ bool inputHandler(int choice) {
           monitor_on = 1;
         } else if (temp_6 == 2 || temp_6 == 5) {
           monitor_on = 2;
+        } else if (temp_6 == 3) {
+          monitor_on = 0;
         }
         //~ some varaibles have to change there values w.r.t situation
         servo_Rotaion = false;
         BuzzerBeeping = true;
-        alarm_time = alarm_time * 2;
+        warningLED = true;
+        if (alarm_time < 5000) {
+          alarm_time = alarm_time * 2;
+        }
         // Serial.println(F("aggressive_monitoring = true"));
       }
     } else {
@@ -803,20 +809,17 @@ void beep() {
   //   int temp_alrm_time = beep_for;
   LED_ON();
   int temp_time = alarm_time;
+  // Serial.println("delay in beep : " + String(temp_time) + " ms");
   for (; temp_time > 0;
-       temp_time -= 400) { // decrement should be 100 (50(HIGH)+50(LOW))
-    // but i use 400 to finish it earlier
-    if (BuzzerBeeping) {
-      Buzzer_ON();
-      delay(50);
-    } else {
-      LED_OFF();
-      delay(50);
-      LED_ON();
-      delay(50);
-      temp_time -= 50;
-    }
+       temp_time -= 250) { // decrement should be 100 (50(HIGH)+50(LOW))
+                           // but i use 400 to finish it earlier
+    Buzzer_ON();
+    delay(100);
     Buzzer_OFF();
+    delay(50);
+    LED_ON();
+    delay(50);
+    LED_OFF();
     delay(50);
   }
   LED_OFF();
