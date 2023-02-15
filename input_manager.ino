@@ -1,24 +1,34 @@
+String String_holder = "";
 void print(String input) { Serial.print(input); }
+void print(int input) { Serial.print(input); }
 void println(String output) { Serial.println(output); }
 
-void strManager(String input);
+void holder_manager(String input);
 void setup() { Serial.begin(9600); }
 void loop() {
-  // take string as a input and send it to function strManager
+  // take string as a input and send it to function holder_manager
   if (Serial.available())
-    strManager(Serial.readStringUntil('\n'));
+    String_holder = Serial.readStringUntil('\n');
+  // holder_manager(Serial.readStringUntil('\n'));
+  while (String_holder != "") {
+    print(holder_manager());
+    print(" _ ");
+  }
 }
-void strManager(String input) {
-  println("working on : " + input);
+int holder_manager() {
+  println("working on : " + String_holder);
   // break down string like 2.4.56 into 2, 4, 56 and print them after storing in
   // variables
-  int a = input.substring(0, input.indexOf('.')).toInt();
-  input = input.substring(input.indexOf('.') + 1);
-  println("value : " + String(a));
-  if (input.indexOf('.') != -1) {
-    strManager(input);
+  //   println("value : " + String(a));
+  if (String_holder.indexOf('.') != -1) {
+    int a = String_holder.substring(0, String_holder.indexOf('.')).toInt();
+    String_holder = String_holder.substring(String_holder.indexOf('.') + 1);
+    // holder_manager(input);
+    return a;
   } else {
-    int b = input.toInt();
-    println("value : " + String(b));
+    int b = String_holder.toInt();
+    String_holder = "";
+    return b;
+    // println("value : " + String(b));
   }
 }
