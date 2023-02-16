@@ -55,10 +55,8 @@ void Buzzer_OFF();
 // # 20+ functions Defined =====================================
 
 //  +---------------------------------------------------> Ultrasound start  <---
-byte critical_zone = 25;
 byte Buzzer = 4;
 
-byte warning_zone = 50;
 byte LED = 6;
 
 int alarm_time = 2000;
@@ -329,12 +327,10 @@ bool inputHandler(int choice) {
   if (choice == 1) { // to set new values of variables
     Serial.println(F("Changing setting...."));
     Serial.println(F("Avaiable variable to change : "));
-    Serial.println("1: critical_zone ," + String(critical_zone));
-    Serial.println("2: warning_zone ," + String(warning_zone));
-    Serial.println("3: alarm_time ," + String(alarm_time));
-    // Serial.println("4: input_timeout ," + String(input_timeout));
-    Serial.println("5: rotation_speed_delay ," + String(rotation_speed_delay));
-    Serial.print("6: negligible_motion , ");
+    Serial.println("1: alarm_time ," + String(alarm_time));
+    // Serial.println("2: input_timeout ," + String(input_timeout));
+    Serial.println("3: rotation_speed_delay ," + String(rotation_speed_delay));
+    Serial.print("4: negligible_motion , ");
     if (servo_Rotaion) {
       Serial.println(negligible_motion);
     } else {
@@ -346,21 +342,17 @@ bool inputHandler(int choice) {
     choice = getString().toInt();
     Serial.println("we got : " + String(choice));
     if (choice == 1) {
-      choise_handler(&critical_zone);
-    } else if (choice == 2) {
-      choise_handler(&warning_zone);
-    } else if (choice == 3) {
       choise_handler(&alarm_time);
     }
-    // else if (choice == 4)
+    // else if (choice == 2)
     // {
     //     choise_handler(&input_timeout);
     // }
-    else if (choice == 5) {
+    else if (choice == 3) {
       // choice = rotation_speed_delay;
       choise_handler(&rotation_speed_delay);
       // rotation_speed_delay = choice;
-    } else if (choice == 6) {
+    } else if (choice == 4) {
       choise_handler(&negligible_motion);
     } else {
       Serial.println("Invalid choice");
@@ -598,9 +590,9 @@ void loop() {
 
   if (Serial.available() >= 1) {
     String tempstr_ = Serial.readStringUntil('\n');
-    // if (tempstr_ >= 1) {
-    inputHandler(tempstr_);
-    // }
+    if (tempstr_.length() > 0) {
+      inputHandler(tempstr_);
+    }
   }
   if (servo_Rotaion) {
     servoRotation();

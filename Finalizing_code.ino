@@ -590,9 +590,9 @@ void loop() {
 
   if (Serial.available() >= 1) {
     String tempstr_ = Serial.readStringUntil('\n');
-    // if (tempstr_ >= 1) {
-    inputHandler(tempstr_);
-    // }
+    if (tempstr_.length() > 0) {
+      inputHandler(tempstr_);
+    }
   }
   if (servo_Rotaion) {
     servoRotation();
