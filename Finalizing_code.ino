@@ -612,14 +612,14 @@ void loop() {
             beep();
             // ! alert
             monitor_on = 10;
-            delay(100);
+            delay(50);
           } else {
             Serial.println("@ ignord D1 changed (" +
                            String(d1[array_size - 2]) + " -> " +
                            String(d1[array_size - 1]) + ")");
             d1[array_size - 2] = d1[array_size - 1];
             monitor_on = 1;
-            delay(100);
+            delay(50);
           }
         }
       }
@@ -636,14 +636,14 @@ void loop() {
             beep();
             // ! alert
             monitor_on = 20;
-            delay(100);
+            delay(50);
           } else {
             Serial.println("@ ignord D2 changed (" +
                            String(d2[array_size - 2]) + " -> " +
                            String(d2[array_size - 1]) + ")");
             d2[array_size - 2] = d2[array_size - 1];
             monitor_on = 2;
-            delay(100);
+            delay(50);
           }
         }
       }
@@ -950,6 +950,10 @@ int holder_manager() {
   // break down string like 2.4.56 into 2, 4, 56 and print them after storing in
   // variables
   //   println("value : " + String(a));
+  if (str_input.indexOf('!') != -1) {
+    String_holder = "";
+    loop();
+  }
   if (String_holder.indexOf('.') != -1) {
     int a = String_holder.substring(0, String_holder.indexOf('.')).toInt();
     String_holder = String_holder.substring(String_holder.indexOf('.') + 1);
@@ -966,6 +970,9 @@ void inputHandler(String str_input) {
   if (str_input.indexOf('.') != -1) {
     String_holder = str_input;
     inputHandler(holder_manager());
+  } else if (str_input.indexOf('!') != -1) {
+    String_holder = "";
+    loop();
   } else {
     inputHandler(str_input.toInt());
   }
