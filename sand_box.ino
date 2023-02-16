@@ -1,5 +1,5 @@
-// code is able to work on commond like 2.3.1 (it will stop servo)
-//$ 08:36 -> (10:57) PM 15/FEB/22
+//+ trying to use EEPROM to save previous recoreds
+//$ 12:42 -> (??:??) PM 16/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -20,6 +20,7 @@ byte monitor_on = 0;
 // * ----------------------------------------------------------------------------------------------->    servo ends   <------------
 int choice = 0;
 String String_holder = "";
+int aggressive_monitoring = 0;
 // int input_timeout = 10000;
 // # Functions =============================================
 int getPinNumber(int required_pin);
@@ -33,6 +34,7 @@ void BinaryManager(int number);
 void sendRFmsg(int msgCode);
 void check_gy_sensor(bool print_records);
 bool inputHandler(int choice);
+void inputHandler(String str_input);
 void servoRotation();
 void update_distance(bool check);
 // void check_critical_distance();
@@ -46,7 +48,10 @@ void choise_handler(byte *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
 int change_detector(int val1, int val2);
 int holder_manager();
-void inputHandler(String str_input);
+void LED_ON();
+void LED_OFF();
+void Buzzer_ON();
+void Buzzer_OFF();
 // # 20+ functions Defined =====================================
 
 //  +---------------------------------------------------> Ultrasound start  <---
@@ -72,7 +77,7 @@ int distance;  // variable for the distance measurement
 long duration2; // variable for the duration of sound wave travel
 int distance2;  // variable for the distance measurement
 //  +-------------------------------------------->  Ultrasound Ends <----------
-int aggressive_monitoring = 0;
+
 // `------------------------------------------->  RF sender config  <----------
 #define pin1 5 // Sender pin: 4 and reciver pin: D0 (1st) (Red)
 #define pin2 7 // Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
@@ -381,7 +386,7 @@ bool inputHandler(int choice) {
       } else if (warningLED) {
         Serial.println(F("Enter 2 to disable warning led blynk "));
       }
-      Serial.println(F("Enter 3 to Turn LED on "));
+      Serial.println(F("Enter 3 to Turn LED on (force)"));
       Serial.println(F("Enter 4 to Turn LED off "));
       choice = getString().toInt();
       Serial.println("input -> ( " + String(choice) + " )");
@@ -485,7 +490,7 @@ bool inputHandler(int choice) {
         Serial.println(F("Enter 4 to active on D1 (Stop) & Gyro"));
         Serial.println(F("Enter 5 to active on D2 (stop) & Gyro"));
         int temp_6 = getString().toInt();
-        Serial.println("input -> ( " + String(choice) + " )");
+        Serial.println("input -> ( " + String(temp_6) + " )");
         if (temp_6 == 1 || temp_6 == 2) {
           gyro_monitoring = false;
         } else if (temp_6 == 3 || temp_6 == 4 || temp_6 == 5) {
@@ -495,11 +500,16 @@ bool inputHandler(int choice) {
           monitor_on = 1;
         } else if (temp_6 == 2 || temp_6 == 5) {
           monitor_on = 2;
+        } else if (temp_6 == 3) {
+          monitor_on = 0;
         }
         //~ some varaibles have to change there values w.r.t situation
         servo_Rotaion = false;
         BuzzerBeeping = true;
-        alarm_time = alarm_time * 2;
+        warningLED = true;
+        if (alarm_time < 5000) {
+          alarm_time = alarm_time * 2;
+        }
         // Serial.println(F("aggressive_monitoring = true"));
       }
     } else {
@@ -797,58 +807,53 @@ void update_distance(bool check) {
 }
 void beep() {
   //   int temp_alrm_time = beep_for;
-  digitalWrite(LED, HIGH);
+  LED_ON();
   int temp_time = alarm_time;
+  // Serial.println("delay in beep : " + String(temp_time) + " ms");
   for (; temp_time > 0;
-       temp_time -= 400) { // decrement should be 100 (50(HIGH)+50(LOW))
-    // but i use 400 to finish it earlier
-    if (BuzzerBeeping) {
-      digitalWrite(Buzzer, HIGH);
-      delay(50);
-    } else {
-      digitalWrite(LED, LOW);
-      delay(50);
-      digitalWrite(LED, HIGH);
-      delay(50);
-      temp_time -= 50;
-    }
-    digitalWrite(Buzzer, LOW);
+       temp_time -= 250) { // decrement should be 100 (50(HIGH)+50(LOW))
+                           // but i use 400 to finish it earlier
+    Buzzer_ON();
+    delay(100);
+    Buzzer_OFF();
+    delay(50);
+    LED_ON();
+    delay(50);
+    LED_OFF();
     delay(50);
   }
-  digitalWrite(LED, LOW);
+  LED_OFF();
 }
 void custom_beep(int beep_for, int delay_bt_beep) {
-  digitalWrite(LED, HIGH);
+  LED_ON();
   for (; beep_for > 0;
        beep_for -=
        (delay_bt_beep * 2)) { // decrement should be 100 (50(HIGH)+50(LOW))
     // but i use 400 to finish it earlier
     if (BuzzerBeeping) {
-      digitalWrite(Buzzer, HIGH);
+      Buzzer_ON();
       delay(50);
     } else {
-      digitalWrite(LED, LOW);
+      LED_OFF();
       delay(50);
-      digitalWrite(LED, HIGH);
+      LED_ON();
       delay(50);
       alarm_time -= 50;
     }
-    digitalWrite(Buzzer, LOW);
+    Buzzer_OFF();
     delay(50);
   }
-  digitalWrite(LED, LOW);
+  LED_OFF();
 }
 void blynk(int defined_delay) {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(defined_delay); // wait for a second
   digitalWrite(LED_BUILTIN,
                LOW); // turn the LED off by making the voltage LOW
-  // delay(1000);
-  if (warningLED) {
-    digitalWrite(LED, HIGH);
-    delay(defined_delay);
-    digitalWrite(LED, LOW);
-  }
+                     // delay(1000);
+  LED_ON();
+  delay(defined_delay);
+  LED_OFF();
 }
 String getString() {
   if (String_holder != "" && String_holder != " " && String_holder != ".") {
@@ -973,3 +978,13 @@ void inputHandler(String str_input) {
     inputHandler(str_input.toInt());
   }
 }
+void LED_ON() {
+  if (warningLED)
+    digitalWrite(LED, HIGH);
+}
+void LED_OFF() { digitalWrite(LED, LOW); }
+void Buzzer_ON() {
+  if (BuzzerBeeping)
+    digitalWrite(Buzzer, HIGH);
+}
+void Buzzer_OFF() { digitalWrite(Buzzer, LOW); }
