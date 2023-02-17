@@ -1,5 +1,5 @@
-//+ trying to use EEPROM to save previous recoreds
-//$ 12:42 -> (??:??) PM 16/FEB/22
+//` bug sppoded in input and gyro monitoring
+//$ 10:58 -> (??:??) PM 17/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
