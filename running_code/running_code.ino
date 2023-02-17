@@ -1,4 +1,4 @@
-//! bugg in input_handler and servo reading output
+//! bugg buzzer beeping and LED blinking in aggressive mode.
 //$ 11:15 -> (??:??) PM 17/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
@@ -229,7 +229,7 @@ int16_t accelerometer_x, accelerometer_y,
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0;
-byte negligible_motion_servo_on = 250;
+byte negligible_motion_servo_on = 230;
 byte negligible_motion_Servo_off = 150;
 
 // , global_X = 0, global_Y = 0, global_Z = 0;
@@ -240,7 +240,7 @@ char *convert_int16_to_str(
   sprintf(tmp_str, "%6d", i);
   return tmp_str;
 }
-int gy_beep = 0;
+byte gy_beep = 0;
 void check_gy_sensor(bool print_records, int neg_motion) {
   delay(100);
   Wire.beginTransmission(MPU_ADDR);
@@ -304,11 +304,7 @@ void check_gy_sensor(bool print_records, int neg_motion) {
           Serial.println(F("( @_ignored_@ )"));
           gy_beep++;
         } else if (gy_beep >= 1) {
-          if (servo_Rotaion) {
-            custom_beep(2000, 200);
-          } else {
-            beep();
-          }
+          custom_beep(2000, 200);
           sendRFmsg(1);
 
           Serial.println(F("#######################"));
@@ -994,8 +990,9 @@ void inputHandler(String str_input) {
   }
 }
 void LED_ON() {
-  if (warningLED)
+  if (warningLED) {
     digitalWrite(LED, HIGH);
+  }
 }
 void LED_OFF() { digitalWrite(LED, LOW); }
 void Buzzer_ON() {
