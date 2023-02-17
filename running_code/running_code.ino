@@ -1,5 +1,5 @@
-// code is able to work on commond like 2.3.1 (it will stop servo)
-//$ 08:36 -> (10:57) PM 15/FEB/22
+//! bugg in input_handler and servo reading output
+//$ 11:15 -> (??:??) PM 17/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -12,8 +12,8 @@ bool servo_Rotaion = true;
 #define array_size ((180 / display_reading_after) + 1)
 int d1[array_size];
 int d2[array_size];
-int rotation_speed_delay = 50;  // angle (++ or --) after (rotation_speed)ms
-byte softMargin_ultraSound = 3; // x inches changes will be negliected
+int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
+byte negligible_distance = 3;  // x inches changes will be negliected
 // so increasing it will slow down rotation speed
 void update_distance();
 byte monitor_on = 0;
@@ -229,7 +229,9 @@ int16_t accelerometer_x, accelerometer_y,
 // int16_t gyro_x, gyro_y, gyro_z; // variables for gyro raw data
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0;
-int negligible_motion = 350;
+byte negligible_motion_servo_on = 250;
+byte negligible_motion_Servo_off = 150;
+
 // , global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
 char *convert_int16_to_str(
@@ -272,44 +274,46 @@ void check_gy_sensor(bool print_records, int neg_motion) {
   // mainZ = accelerometer_z;
   // if (((change_Detector(mainX, global_X, neg_motion)) ||
   //      (change_Detector(mainY, global_Y, neg_motion))))
-  if (((change_detector(accelerometer_x, mainX) +
-        change_detector(accelerometer_y, mainY)) /
-       2) > neg_motion) {
-    if (!print_records) {
-      Serial.print(F("!@ aX = "));
-      Serial.print(accelerometer_x);
-      Serial.print(F(" -> "));
-      Serial.print(mainX);
-      Serial.print(F(" | aY = "));
-      Serial.print(accelerometer_y);
-      Serial.print(F(" -> "));
-      Serial.print(mainY);
-      // Serial.print(F(" | aZ = "));
-      // Serial.print(convert_int16_to_str(accelerometer_z));
-      Serial.print(" avg change (" +
-                   String(((change_detector(accelerometer_x, mainX) +
-                            change_detector(accelerometer_y, mainY)) /
-                           2)) +
-                   ") ");
-      Serial.println(F(" #"));
-      // global_X = mainX;
-      // global_Y = mainY;
-      // global_Z = mainZ;
-    }
-    if (mainX != 0 || mainY != 0) {
-      if (gy_beep == 0) {
-        Serial.println(F("( @_ignored_@ )"));
-        gy_beep++;
-      } else if (gy_beep >= 1) {
-        if (servo_Rotaion) {
-          custom_beep(2000, 200);
-        } else {
-          beep();
-        }
-        sendRFmsg(1);
+  if (neg_motion != -1) {
+    if (((change_detector(accelerometer_x, mainX) +
+          change_detector(accelerometer_y, mainY)) /
+         2) > neg_motion) {
+      if (!print_records) {
+        Serial.print(F("!@ aX = "));
+        Serial.print(mainX);
+        Serial.print(F(" -> "));
+        Serial.print(accelerometer_x);
+        Serial.print(F(" | aY = "));
+        Serial.print(mainY);
+        Serial.print(F(" -> "));
+        Serial.print(accelerometer_y);
+        // Serial.print(F(" | aZ = "));
+        // Serial.print(convert_int16_to_str(accelerometer_z));
+        Serial.print(" avg change (" +
+                     String(((change_detector(accelerometer_x, mainX) +
+                              change_detector(accelerometer_y, mainY)) /
+                             2)) +
+                     ") ");
+        Serial.println(F(" #"));
+        // global_X = mainX;
+        // global_Y = mainY;
+        // global_Z = mainZ;
+      }
+      if (mainX != 0 || mainY != 0) {
+        if (gy_beep == 0) {
+          Serial.println(F("( @_ignored_@ )"));
+          gy_beep++;
+        } else if (gy_beep >= 1) {
+          if (servo_Rotaion) {
+            custom_beep(2000, 200);
+          } else {
+            beep();
+          }
+          sendRFmsg(1);
 
-        Serial.println(F("#######################"));
-        gy_beep = 0;
+          Serial.println(F("#######################"));
+          gy_beep = 0;
+        }
       }
     }
   }
@@ -330,12 +334,11 @@ bool inputHandler(int choice) {
     Serial.println("1: alarm_time ," + String(alarm_time));
     // Serial.println("2: input_timeout ," + String(input_timeout));
     Serial.println("3: rotation_speed_delay ," + String(rotation_speed_delay));
-    Serial.print("4: negligible_motion , ");
-    if (servo_Rotaion) {
-      Serial.println(negligible_motion);
-    } else {
-      Serial.println(negligible_motion - 100);
-    }
+    Serial.println("4: negligible_motion_servo_on , " +
+                   String(negligible_motion_servo_on));
+    Serial.println("5: negligible_motion_Servo_off , " +
+                   String(negligible_motion_Servo_off));
+    Serial.println("6: negligible_distance , " + String(negligible_distance));
     // Serial.println("6: display_reading_after ," +
     // String(display_reading_after));
 
@@ -353,7 +356,11 @@ bool inputHandler(int choice) {
       choise_handler(&rotation_speed_delay);
       // rotation_speed_delay = choice;
     } else if (choice == 4) {
-      choise_handler(&negligible_motion);
+      choise_handler(&negligible_motion_servo_on);
+    } else if (choice == 5) {
+      choise_handler(&negligible_motion_Servo_off);
+    } else if (choice == 6) {
+      choise_handler(&negligible_distance);
     } else {
       Serial.println("Invalid choice");
       return false;
@@ -452,6 +459,7 @@ bool inputHandler(int choice) {
       } else if (!gyro_monitoring) {
         Serial.println(F("Enter 2 to Start gyro"));
       }
+      Serial.println(F("Enter 3 to Force test gyro working"));
       choice = getString().toInt();
       // Serial.println("input -> ( " + String(choice) + " )");
       if (choice == 1) {
@@ -460,6 +468,15 @@ bool inputHandler(int choice) {
       } else if (choice == 2) {
         gyro_monitoring = true;
         Serial.println(F("gyro = true"));
+      } else if (choice == 3) {
+        Serial.print(F("For how long you want to test it? (in seconds) : "));
+        choice = getString().toInt();
+        Serial.println(choice);
+        while (choice > 0) {
+          check_gy_sensor(true, -1);
+          delay(100);
+          choice -= 100;
+        }
       } else {
         Serial.println(F("Invalid choice"));
         return false;
@@ -577,8 +594,7 @@ void setup() {
   pinMode(trigPin2, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin2, INPUT);  // Sets the echoPin as an INPUT
   Serial.begin(9600);
-  Serial.println(F("Ultrasonic Sensor HC-SR04 Test"));
-  Serial.println(F("with Arduino UNO R3"));
+  Serial.println(F("Activating Watcher..."));
   Wire.begin();
   Wire.beginTransmission(
       MPU_ADDR);    // Begins a transmission to the I2C slave (GY-521 board)
@@ -603,7 +619,7 @@ void loop() {
       if (monitor_on == 1 || monitor_on == 10) {
         d1[array_size - 1] = distance / 2.54;
         if (change_Detector(d1[array_size - 1], d1[array_size - 2],
-                            softMargin_ultraSound)) {
+                            negligible_distance)) {
           if (monitor_on == 1) {
             Serial.println("D1 changed (" + String(d1[array_size - 2]) +
                            " -> " + String(d1[array_size - 1]) + ")");
@@ -612,14 +628,14 @@ void loop() {
             beep();
             // ! alert
             monitor_on = 10;
-            delay(100);
+            delay(50);
           } else {
             Serial.println("@ ignord D1 changed (" +
                            String(d1[array_size - 2]) + " -> " +
                            String(d1[array_size - 1]) + ")");
             d1[array_size - 2] = d1[array_size - 1];
             monitor_on = 1;
-            delay(100);
+            delay(50);
           }
         }
       }
@@ -627,7 +643,7 @@ void loop() {
       if (monitor_on == 2 || monitor_on == 20) {
         d2[array_size - 1] = distance2 / 2.54;
         if (change_Detector(d2[array_size - 1], d2[array_size - 2],
-                            softMargin_ultraSound)) {
+                            negligible_distance)) {
           if (monitor_on == 2) {
             Serial.println("D2 changed (" + String(d2[array_size - 2]) +
                            " -> " + String(d2[array_size - 1]) + ")");
@@ -636,20 +652,20 @@ void loop() {
             beep();
             // ! alert
             monitor_on = 20;
-            delay(100);
+            delay(50);
           } else {
             Serial.println("@ ignord D2 changed (" +
                            String(d2[array_size - 2]) + " -> " +
                            String(d2[array_size - 1]) + ")");
             d2[array_size - 2] = d2[array_size - 1];
             monitor_on = 2;
-            delay(100);
+            delay(50);
           }
         }
       }
     }
     if (gyro_monitoring) {
-      check_gy_sensor(false, negligible_motion - 50);
+      check_gy_sensor(false, negligible_motion_Servo_off);
     }
   }
 }
@@ -673,7 +689,7 @@ void servoRotation() {
     if (pos % display_reading_after == 0) {
       blynk(20);
       if (gyro_monitoring && ArraysInitialized) {
-        check_gy_sensor(false, negligible_motion);
+        check_gy_sensor(false, negligible_motion_servo_on);
       }
       // Serial.println(F("gyro out"));
 
@@ -700,7 +716,7 @@ void servoRotation() {
     if (pos % display_reading_after == 0) {
       blynk(20);
       if (gyro_monitoring && ArraysInitialized) {
-        check_gy_sensor(false, negligible_motion);
+        check_gy_sensor(false, negligible_motion_servo_on);
       }
 
       //   Serial.print("Angle : " + String(pos) + " -> ");
@@ -745,13 +761,13 @@ void update_distance(bool check) {
     d2[pos / display_reading_after] = (distance2 / 2.54);
   } else if (ArraysInitialized && check && servo_Rotaion) {
     if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
-                         softMargin_ultraSound)) ||
+                         negligible_distance)) ||
         (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]),
-                         softMargin_ultraSound))) {
+                         negligible_distance))) {
       int msg_code = 0;
       // Serial.println(F("ultra sound change detected"));
       if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
-                           softMargin_ultraSound))) {
+                           negligible_distance))) {
         // Serial.println(F("ultra sound change detected on D1"));
         if (((distance / 2.54) < 450) &&
             (d1[pos / display_reading_after]) < 450) {
@@ -770,7 +786,7 @@ void update_distance(bool check) {
       }
       if ((change_Detector((distance2 / 2.54),
                            (d2[pos / display_reading_after]),
-                           softMargin_ultraSound))) {
+                           negligible_distance))) {
         // Serial.println(F("ultra sound change detected on D2"));
         if (((distance2 / 2.54) < 450) &&
             (d2[pos / display_reading_after]) < 450) {
@@ -950,6 +966,10 @@ int holder_manager() {
   // break down string like 2.4.56 into 2, 4, 56 and print them after storing in
   // variables
   //   println("value : " + String(a));
+  if (String_holder.indexOf('!') != -1 || String_holder == " ") {
+    String_holder = "";
+    loop();
+  }
   if (String_holder.indexOf('.') != -1) {
     int a = String_holder.substring(0, String_holder.indexOf('.')).toInt();
     String_holder = String_holder.substring(String_holder.indexOf('.') + 1);
@@ -966,6 +986,9 @@ void inputHandler(String str_input) {
   if (str_input.indexOf('.') != -1) {
     String_holder = str_input;
     inputHandler(holder_manager());
+  } else if (str_input.indexOf('!') != -1) {
+    String_holder = "";
+    loop();
   } else {
     inputHandler(str_input.toInt());
   }
