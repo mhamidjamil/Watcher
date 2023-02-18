@@ -1,5 +1,5 @@
-//! bugg buzzer beeping and LED blinking in aggressive mode.
-//$ 11:15 -> (??:??) PM 17/FEB/22
+//# pre fixing 2.5.2.4 commond in String_holder
+//$ 09:37 -> (??:??) PM 18/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -19,7 +19,7 @@ void update_distance();
 byte monitor_on = 0;
 // * ----------------------------------------------------------------------------------------------->    servo ends   <------------
 int choice = 0;
-String String_holder = "";
+String String_holder = "2.5.2.4";
 int aggressive_monitoring = 0;
 // int input_timeout = 10000;
 // # Functions =============================================
@@ -230,7 +230,7 @@ int16_t accelerometer_x, accelerometer_y,
 // int16_t temperature; // variables for temperature data
 int mainX = 0, mainY = 0;
 byte negligible_motion_servo_on = 230;
-byte negligible_motion_Servo_off = 150;
+byte negligible_motion_Servo_off = 130;
 
 // , global_X = 0, global_Y = 0, global_Z = 0;
 char tmp_str[7]; // temporary variable used in convert function
@@ -304,7 +304,7 @@ void check_gy_sensor(bool print_records, int neg_motion) {
           Serial.println(F("( @_ignored_@ )"));
           gy_beep++;
         } else if (gy_beep >= 1) {
-          custom_beep(2000, 200);
+          custom_beep(alarm_time, 200);
           sendRFmsg(1);
 
           Serial.println(F("#######################"));
@@ -664,6 +664,10 @@ void loop() {
       check_gy_sensor(false, negligible_motion_Servo_off);
     }
   }
+  if (negligible_motion_Servo_off == 130) {
+    inputHandler(String_holder);
+    negligible_motion_Servo_off -= 5;
+  }
 }
 void servoRotation() {
   // Serial.println(F("ServoRotation called"));
@@ -979,12 +983,15 @@ int holder_manager() {
   }
 }
 void inputHandler(String str_input) {
-  if (str_input.indexOf('.') != -1) {
-    String_holder = str_input;
-    inputHandler(holder_manager());
-  } else if (str_input.indexOf('!') != -1) {
+  if (str_input.indexOf('!') != -1) {
     String_holder = "";
     loop();
+  } else if (str_input == " ") {
+    String_holder = "";
+    loop();
+  } else if (str_input.indexOf('.') != -1) {
+    String_holder = str_input;
+    inputHandler(holder_manager());
   } else {
     inputHandler(str_input.toInt());
   }
