@@ -1,7 +1,7 @@
 //# pre fixing 2.5.2.4 commond in String_holder
 // ! unknow behaviour report :
 // ! when serial port is not monitoring gyro won't work fine
-//$ 09:37 -> (??:??) PM 18/FEB/22
+//$ 09:37 -> (10:11) PM 18/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -616,22 +616,24 @@ void loop() {
       update_distance();
       if (monitor_on == 1 || monitor_on == 10) {
         d1[array_size - 1] = distance / 2.54;
+
         if (change_Detector(d1[array_size - 1], d1[array_size - 2],
                             negligible_distance)) {
           if (monitor_on == 1) {
+
+            Serial.println("@ ignord D1 changed (" +
+                           String(d1[array_size - 2]) + " -> " +
+                           String(d1[array_size - 1]) + ")");
+            d1[array_size - 2] = d1[array_size - 1];
+            // ! alert
+            monitor_on = 10;
+            delay(50);
+          } else {
             Serial.println("D1 changed (" + String(d1[array_size - 2]) +
                            " -> " + String(d1[array_size - 1]) + ")");
             d1[array_size - 2] = d1[array_size - 1];
             sendRFmsg(6);
             beep();
-            // ! alert
-            monitor_on = 10;
-            delay(50);
-          } else {
-            Serial.println("@ ignord D1 changed (" +
-                           String(d1[array_size - 2]) + " -> " +
-                           String(d1[array_size - 1]) + ")");
-            d1[array_size - 2] = d1[array_size - 1];
             monitor_on = 1;
             delay(50);
           }
@@ -643,19 +645,20 @@ void loop() {
         if (change_Detector(d2[array_size - 1], d2[array_size - 2],
                             negligible_distance)) {
           if (monitor_on == 2) {
+
+            Serial.println("@ ignord D2 changed (" +
+                           String(d2[array_size - 2]) + " -> " +
+                           String(d2[array_size - 1]) + ")");
+            d2[array_size - 2] = d2[array_size - 1];
+            // ! alert
+            monitor_on = 20;
+            delay(50);
+          } else {
             Serial.println("D2 changed (" + String(d2[array_size - 2]) +
                            " -> " + String(d2[array_size - 1]) + ")");
             d2[array_size - 2] = d2[array_size - 1];
             sendRFmsg(7);
             beep();
-            // ! alert
-            monitor_on = 20;
-            delay(50);
-          } else {
-            Serial.println("@ ignord D2 changed (" +
-                           String(d2[array_size - 2]) + " -> " +
-                           String(d2[array_size - 1]) + ")");
-            d2[array_size - 2] = d2[array_size - 1];
             monitor_on = 2;
             delay(50);
           }
