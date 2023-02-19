@@ -1,7 +1,7 @@
-//# pre fixing 2.5.2.4 commond in String_holder
+//# pre fixing 2.5.2.4 command in String_holder
 // ! unknow behaviour report :
 // ! when serial port is not monitoring gyro won't work fine
-//$ 09:37 -> (10:11) PM 18/FEB/22
+//$ 04:02 -> (04:23) PM 19/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -9,13 +9,13 @@ int pos;
 bool ArraysInitialized = false;
 bool warningLED = true;
 bool BuzzerBeeping = false;
-bool servo_Rotaion = true;
+bool servo_Rotation = true;
 #define display_reading_after 18 //  (180/display_reading_after) = x,(10)
 #define array_size ((180 / display_reading_after) + 1)
 int d1[array_size];
 int d2[array_size];
 int rotation_speed_delay = 50; // angle (++ or --) after (rotation_speed)ms
-byte negligible_distance = 3;  // x inches changes will be negliected
+byte negligible_distance = 3;  // x inches changes will be neglected
 // so increasing it will slow down rotation speed
 void update_distance();
 byte monitor_on = 0;
@@ -29,7 +29,7 @@ int getPinNumber(int required_pin);
 void switchManager(int PinNo_, int status);
 void TestStream(int delay_);
 void BinaryManager(int number);
-void deciaml_to_binary(int number);
+void decimal_to_binary(int number);
 void SwitchInverter(int a, int b, int c, int d, bool status);
 void TestStream(int delay_);
 void BinaryManager(int number);
@@ -43,10 +43,10 @@ void update_distance(bool check);
 // void check_warning_distance();
 void beep();
 void custom_beep(int beep_for, int delay_bt_beep);
-void blynk(int defined_delay);
+void blink(int defined_delay);
 String getString();
-void choise_handler(int *p);
-void choise_handler(byte *p);
+void choice_handler(int *p);
+void choice_handler(byte *p);
 bool change_Detector(int value_to_be_compare, int previous_value, int margin);
 int change_detector(int val1, int val2);
 int holder_manager();
@@ -79,10 +79,10 @@ int distance2;  // variable for the distance measurement
 //  +-------------------------------------------->  Ultrasound Ends <----------
 
 // `------------------------------------------->  RF sender config  <----------
-#define pin1 5 // Sender pin: 4 and reciver pin: D0 (1st) (Red)
-#define pin2 7 // Sender pin: 3 and reciver pin: D1 (2nd) (Blue)
-#define pin3 3 // Sender pin: 1 and reciver pin: D2 (3rd) (Green)
-#define pin4 8 // Sender pin: 2 and reciver pin: D3 (4th) (Green mini)
+#define pin1 5 // Sender pin: 4 and receiver pin: D0 (1st) (Red)
+#define pin2 7 // Sender pin: 3 and receiver pin: D1 (2nd) (Blue)
+#define pin3 3 // Sender pin: 1 and receiver pin: D2 (3rd) (Green)
+#define pin4 8 // Sender pin: 2 and receiver pin: D3 (4th) (Green mini)
 byte defaultDelay = 50;
 int getPinNumber(int required_pin) {
   if (required_pin == 1) {
@@ -106,29 +106,29 @@ void offOuput() {
   digitalWrite(pin4, HIGH);
   delay(defaultDelay);
 }
-void deciaml_to_binary(int inpt) {
-  // Serial.println("deciaml_to_binary : " + String(inpt));
-  int out1 = inpt % 2;
+void decimal_to_binary(int input_) {
+  // Serial.println("decimal_to_binary : " + String(input_));
+  int out1 = input_ % 2;
   int out2 = 0;
   int out3 = 0;
   int out4 = 0;
-  inpt = inpt / 2;
-  if (inpt >= 2) {
-    out2 = inpt % 2;
-    inpt = inpt / 2;
-    if (inpt >= 2) {
-      out3 = inpt % 2;
-      inpt = inpt / 2;
-      if (inpt >= 2) {
-        out4 = inpt % 2;
-        inpt = inpt / 2;
-      } else if (inpt == 1) {
+  input_ = input_ / 2;
+  if (input_ >= 2) {
+    out2 = input_ % 2;
+    input_ = input_ / 2;
+    if (input_ >= 2) {
+      out3 = input_ % 2;
+      input_ = input_ / 2;
+      if (input_ >= 2) {
+        out4 = input_ % 2;
+        input_ = input_ / 2;
+      } else if (input_ == 1) {
         out4 = 1;
       }
-    } else if (inpt == 1) {
+    } else if (input_ == 1) {
       out3 = 1;
     }
-  } else if (inpt == 1) {
+  } else if (input_ == 1) {
     out2 = 1;
   }
   // Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ",
@@ -185,33 +185,33 @@ void BinaryManager(int number) {
     SwitchInverter(1, 1, 1, 1, true);
     delay(defaultDelay);
   }
-  deciaml_to_binary(number);
+  decimal_to_binary(number);
 }
 void sendRFmsg(int msgCode) {
-  // 1 for movment detected by GYRO
-  // 2 for movment detected by ULTRASOUND
-  // 3 for movment detected by both
+  // 1 for movement detected by GYRO
+  // 2 for movement detected by ULTRASOUND
+  // 3 for movement detected by both
   if (msgCode == 1) {
     BinaryManager(msgCode);
-    Serial.println(F("Gyro detected movment, msg sent"));
+    Serial.println(F("Gyro detected movement, msg sent"));
   } else if (msgCode == 2) {
     BinaryManager(msgCode);
-    Serial.println(F("ultra sound sensor (1) detected movment, msg sent"));
+    Serial.println(F("ultra sound sensor (1) detected movement, msg sent"));
   } else if (msgCode == 3) {
     BinaryManager(msgCode);
-    Serial.println(F("ultra sound sensor (2) detected movment, msg sent"));
+    Serial.println(F("ultra sound sensor (2) detected movement, msg sent"));
   } else if (msgCode == 4) {
     BinaryManager(msgCode);
-    Serial.println(F("Both ultra sound sensors detected movment, msg sent"));
+    Serial.println(F("Both ultra sound sensors detected movement, msg sent"));
   } else if (msgCode == 5) {
     BinaryManager(msgCode);
-    Serial.println(F("Both detected movment, msg sent"));
+    Serial.println(F("Both detected movement, msg sent"));
   } else if (msgCode == 6) {
     BinaryManager(msgCode);
-    Serial.println(F("Ultrasound 1 detected movment, msg sent"));
+    Serial.println(F("Ultrasound 1 detected movement, msg sent"));
   } else if (msgCode == 7) {
     BinaryManager(msgCode);
-    Serial.println(F("Ultrasound 2 detected movment, msg sent"));
+    Serial.println(F("Ultrasound 2 detected movement, msg sent"));
   } else {
     Serial.println(F("msg code not defined"));
   }
@@ -328,7 +328,7 @@ bool inputHandler(int choice) {
   // }
   if (choice == 1) { // to set new values of variables
     Serial.println(F("Changing setting...."));
-    Serial.println(F("Avaiable variable to change : "));
+    Serial.println(F("Available variable to change : "));
     Serial.println("1: alarm_time ," + String(alarm_time));
     // Serial.println("2: input_timeout ," + String(input_timeout));
     Serial.println("3: rotation_speed_delay ," + String(rotation_speed_delay));
@@ -341,24 +341,24 @@ bool inputHandler(int choice) {
     // String(display_reading_after));
 
     choice = getString().toInt();
-    Serial.println("we got : " + String(choice));
+    // Serial.println("we got : " + String(choice));
     if (choice == 1) {
-      choise_handler(&alarm_time);
+      choice_handler(&alarm_time);
     }
     // else if (choice == 2)
     // {
-    //     choise_handler(&input_timeout);
+    //     choice_handler(&input_timeout);
     // }
     else if (choice == 3) {
       // choice = rotation_speed_delay;
-      choise_handler(&rotation_speed_delay);
+      choice_handler(&rotation_speed_delay);
       // rotation_speed_delay = choice;
     } else if (choice == 4) {
-      choise_handler(&negligible_motion_servo_on);
+      choice_handler(&negligible_motion_servo_on);
     } else if (choice == 5) {
-      choise_handler(&negligible_motion_Servo_off);
+      choice_handler(&negligible_motion_Servo_off);
     } else if (choice == 6) {
-      choise_handler(&negligible_distance);
+      choice_handler(&negligible_distance);
     } else {
       Serial.println("Invalid choice");
       return false;
@@ -376,17 +376,18 @@ bool inputHandler(int choice) {
     Serial.println(F("Enter 4 for Gyro operations "));
     Serial.println(F("Enter 5 for aggressive monitoring mode"));
     choice = getString().toInt();
-    Serial.println("input -> ( " + String(choice) + " )");
+    // Serial.println("input -> ( " + String(choice) + " )");
+    // + pointer for debugging
     if (choice == 1) { // LED work
       if (!warningLED) {
-        Serial.println(F("Enter 1 to enable warning led blynk "));
+        Serial.println(F("Enter 1 to enable warning led blink "));
       } else if (warningLED) {
-        Serial.println(F("Enter 2 to disable warning led blynk "));
+        Serial.println(F("Enter 2 to disable warning led blink "));
       }
       Serial.println(F("Enter 3 to Turn LED on (force)"));
       Serial.println(F("Enter 4 to Turn LED off "));
       choice = getString().toInt();
-      Serial.println("input -> ( " + String(choice) + " )");
+      // Serial.println("input -> ( " + String(choice) + " )");
       if (choice == 1) {
         warningLED = true;
       } else if (choice == 2) {
@@ -407,7 +408,7 @@ bool inputHandler(int choice) {
       }
       Serial.println(F("Enter 3 to test buzzer (force on)"));
       choice = getString().toInt();
-      Serial.println("input -> ( " + String(choice) + " )");
+      // Serial.println("input -> ( " + String(choice) + " )");
       if (choice == 1) {
         BuzzerBeeping = false;
       } else if (choice == 2) {
@@ -424,20 +425,20 @@ bool inputHandler(int choice) {
         return false;
       }
     } else if (choice == 3) { // servo work
-      if (servo_Rotaion) {
-        Serial.println(F("Enter 1 to stop servo_Rotaion"));
-      } else if (!servo_Rotaion) {
-        Serial.println(F("Enter 2 to start servo_Rotaion"));
+      if (servo_Rotation) {
+        Serial.println(F("Enter 1 to stop servo_Rotation"));
+      } else if (!servo_Rotation) {
+        Serial.println(F("Enter 2 to start servo_Rotation"));
       }
       Serial.println(F("Enter 3 to move servo to specific angle"));
       choice = getString().toInt();
-      Serial.println("input -> ( " + String(choice) + " )");
+      // Serial.println("input -> ( " + String(choice) + " )");
       if (choice == 1) {
-        servo_Rotaion = false;
-        Serial.println(F("servo_Rotaion = false"));
+        servo_Rotation = false;
+        Serial.println(F("servo_Rotation = false"));
       } else if (choice == 2) {
-        servo_Rotaion = true;
-        Serial.println(F("servo_Rotaion = true"));
+        servo_Rotation = true;
+        Serial.println(F("servo_Rotation = true"));
       } else if (choice == 3) {
         Serial.print(F("Enter angle to move servo to : "));
         choice = getString().toInt();
@@ -479,13 +480,13 @@ bool inputHandler(int choice) {
         Serial.println(F("Invalid choice"));
         return false;
       }
-    } else if (choice == 5) { // Aggresive monitoring
+    } else if (choice == 5) { // Aggressive monitoring
       Serial.println(F("Enter 1 to stop aggressive monitoring"));
       Serial.println(F("Enter 2 to Start aggressive monitoring"));
       choice = getString().toInt();
-      Serial.println("input -> ( " + String(choice) + " )");
+      // Serial.println("input -> ( " + String(choice) + " )");
       if (choice == 1) {
-        servo_Rotaion = true;
+        servo_Rotation = true;
         BuzzerBeeping = false;
         gyro_monitoring = true;
         alarm_time /= 2;
@@ -497,7 +498,7 @@ bool inputHandler(int choice) {
         Serial.println(F("Enter 4 to active on D1 (Stop) & Gyro"));
         Serial.println(F("Enter 5 to active on D2 (stop) & Gyro"));
         int temp_6 = getString().toInt();
-        Serial.println("input -> ( " + String(temp_6) + " )");
+        // Serial.println("input -> ( " + String(temp_6) + " )");
         if (temp_6 == 1 || temp_6 == 2) {
           gyro_monitoring = false;
         } else if (temp_6 == 3 || temp_6 == 4 || temp_6 == 5) {
@@ -510,8 +511,8 @@ bool inputHandler(int choice) {
         } else if (temp_6 == 3) {
           monitor_on = 0;
         }
-        //~ some varaibles have to change there values w.r.t situation
-        servo_Rotaion = false;
+        //~ some variables have to change there values w.r.t situation
+        servo_Rotation = false;
         BuzzerBeeping = true;
         warningLED = true;
         if (alarm_time < 5000) {
@@ -528,24 +529,24 @@ bool inputHandler(int choice) {
     Serial.println(F("Enter 2 to send Binary data"));
     Serial.println(F("Enter 3 to test all output pins"));
     choice = getString().toInt();
-    Serial.println("input -> ( " + String(choice) + " )");
+    // Serial.println("input -> ( " + String(choice) + " )");
     if (choice == 1) {
-      int tempdaly;
+      int temp_delay;
       Serial.print(F("Enter pin number : "));
       choice = getString().toInt();
       Serial.println(choice);
       Serial.println(F("Enter Delay : "));
-      tempdaly = getString().toInt();
-      Serial.println(tempdaly);
+      temp_delay = getString().toInt();
+      Serial.println(temp_delay);
       int choice2;
       Serial.println(F("Enter 1 to force pin high"));
       Serial.println(F("Enter 2 to force pin low"));
       choice2 = getString().toInt();
-      Serial.println("input -> ( " + String(choice) + " )");
+      // Serial.println("input -> ( " + String(choice) + " )");
       if (choice2 == 1) {
         digitalWrite(getPinNumber(choice), LOW);
-        delay(tempdaly);
-        if (tempdaly != 420) {
+        delay(temp_delay);
+        if (temp_delay != 420) {
           digitalWrite(getPinNumber(choice), HIGH);
         }
       } else if (choice2 == 2) {
@@ -608,7 +609,7 @@ void loop() {
       inputHandler(tempstr_);
     }
   }
-  if (servo_Rotaion) {
+  if (servo_Rotation) {
     servoRotation();
     //   update_distance(false);
   } else {
@@ -621,7 +622,7 @@ void loop() {
                             negligible_distance)) {
           if (monitor_on == 1) {
 
-            Serial.println("@ ignord D1 changed (" +
+            Serial.println("@ ignored D1 changed (" +
                            String(d1[array_size - 2]) + " -> " +
                            String(d1[array_size - 1]) + ")");
             d1[array_size - 2] = d1[array_size - 1];
@@ -646,7 +647,7 @@ void loop() {
                             negligible_distance)) {
           if (monitor_on == 2) {
 
-            Serial.println("@ ignord D2 changed (" +
+            Serial.println("@ ignored D2 changed (" +
                            String(d2[array_size - 2]) + " -> " +
                            String(d2[array_size - 1]) + ")");
             d2[array_size - 2] = d2[array_size - 1];
@@ -677,22 +678,22 @@ void loop() {
 void servoRotation() {
   // Serial.println(F("ServoRotation called"));
 
-  if (servo_Rotaion) {
+  if (servo_Rotation) {
     delay(100);
   }
-  for (pos = 0; pos <= 180 && servo_Rotaion; pos++) {
+  for (pos = 0; pos <= 180 && servo_Rotation; pos++) {
 
     if (Serial.available() >= 1) {
       String tempstr_ = Serial.readStringUntil('\n');
-      // if (tempstr_ >= 1) {
-      inputHandler(tempstr_);
-      // }
+      if (tempstr_.length() > 0) {
+        inputHandler(tempstr_);
+      }
     }
     Myservo.write(pos);
     delay(rotation_speed_delay);
 
     if (pos % display_reading_after == 0) {
-      blynk(20);
+      blink(20);
       if (gyro_monitoring && ArraysInitialized) {
         check_gy_sensor(false, negligible_motion_servo_on);
       }
@@ -707,19 +708,19 @@ void servoRotation() {
   // Serial.println(F("ServoRotation 180 out"));
   delay(200);
 
-  for (pos = 180; pos >= 0 && servo_Rotaion; pos--) {
+  for (pos = 180; pos >= 0 && servo_Rotation; pos--) {
     if (Serial.available() >= 1) {
       String tempstr_ = Serial.readStringUntil('\n');
-      // if (tempstr_ >= 1) {
-      inputHandler(tempstr_);
-      // }
+      if (tempstr_.length() > 0) {
+        inputHandler(tempstr_);
+      }
     }
 
     Myservo.write(pos);
     delay(rotation_speed_delay);
 
     if (pos % display_reading_after == 0) {
-      blynk(20);
+      blink(20);
       if (gyro_monitoring && ArraysInitialized) {
         check_gy_sensor(false, negligible_motion_servo_on);
       }
@@ -759,12 +760,12 @@ void update_distance(bool check) {
   Serial.print(distance2 / 2.54);
   Serial.println(F(" in"));
 
-  if (!ArraysInitialized && check && servo_Rotaion) { // initializing arrays
+  if (!ArraysInitialized && check && servo_Rotation) { // initializing arrays
     // Serial.print("Angle : " + String(pos));
     // Serial.println(", index : " + String(pos / display_reading_after));
     d1[pos / display_reading_after] = (distance / 2.54);
     d2[pos / display_reading_after] = (distance2 / 2.54);
-  } else if (ArraysInitialized && check && servo_Rotaion) {
+  } else if (ArraysInitialized && check && servo_Rotation) {
     if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
                          negligible_distance)) ||
         (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]),
@@ -858,7 +859,7 @@ void custom_beep(int beep_for, int delay_bt_beep) {
   }
   LED_OFF();
 }
-void blynk(int defined_delay) {
+void blink(int defined_delay) {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(defined_delay); // wait for a second
   digitalWrite(LED_BUILTIN,
@@ -908,7 +909,7 @@ String getString() {
   Serial.println(F("------------------------------------------"));
   return sdata;
 }
-void choise_handler(int *p) {
+void choice_handler(int *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
   Serial.println(newvalue);
@@ -917,7 +918,7 @@ void choise_handler(int *p) {
   Serial.println(String(*p));
   // Serial.println("new value : " + String(*p));
 }
-void choise_handler(byte *p) {
+void choice_handler(byte *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
   Serial.println(newvalue);
@@ -992,6 +993,9 @@ void inputHandler(String str_input) {
     String_holder = "";
     loop();
   } else if (str_input == " ") {
+    String_holder = "";
+    loop();
+  } else if (str_input.indexOf(' ') != -1) {
     String_holder = "";
     loop();
   } else if (str_input.indexOf('.') != -1) {

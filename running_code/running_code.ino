@@ -1,7 +1,7 @@
 //# pre fixing 2.5.2.4 commond in String_holder
 // ! unknow behaviour report :
 // ! when serial port is not monitoring gyro won't work fine
-//$ 09:37 -> (10:11) PM 18/FEB/22
+//$ 04:02 -> (04:) PM 19/FEB/22
 // * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
@@ -684,9 +684,9 @@ void servoRotation() {
 
     if (Serial.available() >= 1) {
       String tempstr_ = Serial.readStringUntil('\n');
-      // if (tempstr_ >= 1) {
-      inputHandler(tempstr_);
-      // }
+      if (tempstr_.length() > 0) {
+        inputHandler(tempstr_);
+      }
     }
     Myservo.write(pos);
     delay(rotation_speed_delay);
@@ -710,9 +710,9 @@ void servoRotation() {
   for (pos = 180; pos >= 0 && servo_Rotaion; pos--) {
     if (Serial.available() >= 1) {
       String tempstr_ = Serial.readStringUntil('\n');
-      // if (tempstr_ >= 1) {
-      inputHandler(tempstr_);
-      // }
+      if (tempstr_.length() > 0) {
+        inputHandler(tempstr_);
+      }
     }
 
     Myservo.write(pos);
@@ -992,6 +992,9 @@ void inputHandler(String str_input) {
     String_holder = "";
     loop();
   } else if (str_input == " ") {
+    String_holder = "";
+    loop();
+  } else if (str_input.indexOf(' ') != -1) {
     String_holder = "";
     loop();
   } else if (str_input.indexOf('.') != -1) {

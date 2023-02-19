@@ -1,7 +1,5 @@
 {
     "better-comments.tags": [
-    
-
         {
             "tag": "!",
             "color": "#FF2D00",
@@ -101,5 +99,33 @@
             "bold": false,
             "italic": false
         }
-    ]
+    ],
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#1e802c",
+        "activityBar.background": "#1e802c",
+        "activityBar.foreground": "#e7e7e7",
+        "activityBar.inactiveForeground": "#e7e7e799",
+        "activityBarBadge.background": "#35249b",
+        "activityBarBadge.foreground": "#e7e7e7",
+        "commandCenter.border": "#e7e7e799",
+        "sash.hoverBorder": "#1e802c",
+        "statusBar.background": "#14571e",
+        "statusBar.foreground": "#e7e7e7",
+        "statusBarItem.hoverBackground": "#1e802c",
+        "statusBarItem.remoteBackground": "#14571e",
+        "statusBarItem.remoteForeground": "#e7e7e7",
+        "titleBar.activeBackground": "#14571e",
+        "titleBar.activeForeground": "#e7e7e7",
+        "titleBar.inactiveBackground": "#14571e99",
+        "titleBar.inactiveForeground": "#e7e7e799"
+    },
+    "peacock.color": "#14571e",
+    "cSpell.words": [
+        "condit",
+        "tempstr",
+        "XOUT",
+        "YOUT",
+        "ZOUT"
+    ],
+    // "peacock.color": "#42b883"
 }
