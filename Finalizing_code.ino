@@ -1,4 +1,4 @@
-//$ last work 26/August/23 [11:58 PM]
+//$ last work 27/August/23 [12:27 AM]
 //  ! unknow behaviour report :
 //  ! when serial port is not monitoring gyro won't work fine
 //  * ---------------------------------------------------------------------------------------------->    servo start   <------------
