@@ -1,8 +1,7 @@
-//# pre fixing 2.5.2.4 command in String_holder
-// ! unknow behaviour report :
-// ! when serial port is not monitoring gyro won't work fine
-//$ 04:02 -> (04:23) PM 19/FEB/22
-// * ---------------------------------------------------------------------------------------------->    servo start   <------------
+//$ last work 26/August/23 [11:58 PM]
+//  ! unknow behaviour report :
+//  ! when serial port is not monitoring gyro won't work fine
+//  * ---------------------------------------------------------------------------------------------->    servo start   <------------
 #include <Servo.h>
 Servo Myservo;
 int pos;
@@ -98,6 +97,7 @@ int getPinNumber(int required_pin) {
     return 0;
   }
 }
+
 void offOuput() {
   delay(defaultDelay);
   digitalWrite(pin1, HIGH);
@@ -106,6 +106,7 @@ void offOuput() {
   digitalWrite(pin4, HIGH);
   delay(defaultDelay);
 }
+
 void decimal_to_binary(int input_) {
   // Serial.println("decimal_to_binary : " + String(input_));
   int out1 = input_ % 2;
@@ -137,6 +138,7 @@ void decimal_to_binary(int input_) {
   SwitchInverter(out4, out3, out2, out1, true);
   offOuput();
 }
+
 void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4,
                     bool invert) {
   int out_1;
@@ -162,6 +164,7 @@ void SwitchInverter(int inpuT1, int inpuT2, int inpuT3, int inpuT4,
   delay(defaultDelay);
   offOuput();
 }
+
 void switchManager(int pinNo, int invert_status) {
 
   if (invert_status == 0) {
@@ -170,6 +173,7 @@ void switchManager(int pinNo, int invert_status) {
     digitalWrite(getPinNumber(pinNo), LOW);
   }
 }
+
 void TestStream(int delay_) {
   Serial.println("Delay time: " + String(delay_));
   for (int i = 1; i <= 4; i++) {
@@ -179,6 +183,7 @@ void TestStream(int delay_) {
     // delay(delay_);
   }
 }
+
 void BinaryManager(int number) {
   // Serial.println("Binary manager got : " + String(number));
   for (; number >= 15; number -= 15) {
@@ -187,6 +192,7 @@ void BinaryManager(int number) {
   }
   decimal_to_binary(number);
 }
+
 void sendRFmsg(int msgCode) {
   // 1 for movement detected by GYRO
   // 2 for movement detected by ULTRASOUND
@@ -574,6 +580,7 @@ bool inputHandler(int choice) {
   Serial.println(F("Handler out"));
   return true;
 }
+
 void setup() {
   pinMode(pin1, OUTPUT);
   pinMode(pin2, OUTPUT);
@@ -601,6 +608,7 @@ void setup() {
   Wire.write(0);    // set to zero (wakes up the MPU-6050)
   Wire.endTransmission(true);
 }
+
 void loop() {
 
   if (Serial.available() >= 1) {
@@ -616,7 +624,7 @@ void loop() {
     {
       update_distance();
       if (monitor_on == 1 || monitor_on == 10) {
-        d1[array_size - 1] = distance / 2.54;
+        d1[array_size - 1] = distance;
 
         if (change_Detector(d1[array_size - 1], d1[array_size - 2],
                             negligible_distance)) {
@@ -642,7 +650,7 @@ void loop() {
       }
 
       if (monitor_on == 2 || monitor_on == 20) {
-        d2[array_size - 1] = distance2 / 2.54;
+        d2[array_size - 1] = distance2;
         if (change_Detector(d2[array_size - 1], d2[array_size - 2],
                             negligible_distance)) {
           if (monitor_on == 2) {
@@ -675,6 +683,7 @@ void loop() {
     negligible_motion_Servo_off -= 5;
   }
 }
+
 void servoRotation() {
   // Serial.println(F("ServoRotation called"));
 
@@ -749,64 +758,62 @@ void servoRotation() {
     Serial.println("");
   }
 }
+
 void update_distance(bool check) {
   update_distance();
   if (check) {
     Serial.print("Angle : " + String(pos) + " -> ");
   }
   Serial.print(F("D1 : "));
-  Serial.print(distance / 2.54);
+  Serial.print(distance);
   Serial.print(F(", D2 : "));
-  Serial.print(distance2 / 2.54);
+  Serial.print(distance2);
   Serial.println(F(" in"));
 
   if (!ArraysInitialized && check && servo_Rotation) { // initializing arrays
     // Serial.print("Angle : " + String(pos));
     // Serial.println(", index : " + String(pos / display_reading_after));
-    d1[pos / display_reading_after] = (distance / 2.54);
-    d2[pos / display_reading_after] = (distance2 / 2.54);
+    d1[pos / display_reading_after] = distance;
+    d2[pos / display_reading_after] = distance2;
   } else if (ArraysInitialized && check && servo_Rotation) {
-    if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
+    if ((change_Detector(distance, (d1[pos / display_reading_after]),
                          negligible_distance)) ||
-        (change_Detector((distance2 / 2.54), (d2[pos / display_reading_after]),
+        (change_Detector(distance2, (d2[pos / display_reading_after]),
                          negligible_distance))) {
       int msg_code = 0;
       // Serial.println(F("ultra sound change detected"));
-      if ((change_Detector((distance / 2.54), (d1[pos / display_reading_after]),
+      if ((change_Detector(distance, (d1[pos / display_reading_after]),
                            negligible_distance))) {
         // Serial.println(F("ultra sound change detected on D1"));
-        if (((distance / 2.54) < 450) &&
-            (d1[pos / display_reading_after]) < 450) {
+        if ((distance < 450) && (d1[pos / display_reading_after]) < 450) {
           Serial.print("#->(" + String(pos) + ")->");
           Serial.print("previous value : " +
                        String(d1[pos / display_reading_after]));
-          Serial.println(" current value : " + String(distance / 2.54));
-          d1[pos / display_reading_after] = (distance / 2.54);
+          Serial.println(" current value : " + String(distance));
+          d1[pos / display_reading_after] = distance;
           msg_code += 5;
         } else {
           Serial.print(F("@(_ignored_) D1 value changes ( "));
           Serial.println(String(d1[pos / display_reading_after]) + " --> " +
-                         String(distance / 2.54) + " )");
-          d1[pos / display_reading_after] = (distance / 2.54);
+                         String(distance) + " )");
+          d1[pos / display_reading_after] = distance;
         }
       }
-      if ((change_Detector((distance2 / 2.54),
-                           (d2[pos / display_reading_after]),
+      if ((change_Detector(distance2, (d2[pos / display_reading_after]),
                            negligible_distance))) {
         // Serial.println(F("ultra sound change detected on D2"));
-        if (((distance2 / 2.54) < 450) &&
-            (d2[pos / display_reading_after]) < 450) {
+        if ((distance2 < 450) && (d2[pos / display_reading_after]) < 450) {
           Serial.print("##->(" + String(pos) + ")->");
           Serial.print("previous value : " +
                        String(d2[pos / display_reading_after]));
-          Serial.println(" current value : " + String(distance2 / 2.54));
-          d2[pos / display_reading_after] = (distance2 / 2.54);
+          Serial.println(" current value : " + String(distance2));
+          d2[pos / display_reading_after] = distance2;
           msg_code += 10;
         } else {
           Serial.print(F("@(_ignored_) D2 value changes ("));
           Serial.println(String(d2[pos / display_reading_after]) + " --> " +
-                         String(distance2 / 2.54) + " )");
-          d2[pos / display_reading_after] = (distance2 / 2.54);
+                         String(distance2) + " )");
+          d2[pos / display_reading_after] = distance2;
         }
       }
       if (msg_code == 5) {
@@ -819,6 +826,7 @@ void update_distance(bool check) {
     }
   }
 }
+
 void beep() {
   //   int temp_alrm_time = beep_for;
   LED_ON();
@@ -838,6 +846,7 @@ void beep() {
   }
   LED_OFF();
 }
+
 void custom_beep(int beep_for, int delay_bt_beep) {
   LED_ON();
   for (; beep_for > 0;
@@ -859,6 +868,7 @@ void custom_beep(int beep_for, int delay_bt_beep) {
   }
   LED_OFF();
 }
+
 void blink(int defined_delay) {
   digitalWrite(LED_BUILTIN, HIGH);
   delay(defined_delay); // wait for a second
@@ -869,6 +879,7 @@ void blink(int defined_delay) {
   delay(defined_delay);
   LED_OFF();
 }
+
 String getString() {
   if (String_holder != "" && String_holder != " " && String_holder != ".") {
     return String(holder_manager());
@@ -909,6 +920,7 @@ String getString() {
   Serial.println(F("------------------------------------------"));
   return sdata;
 }
+
 void choice_handler(int *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
@@ -918,6 +930,7 @@ void choice_handler(int *p) {
   Serial.println(String(*p));
   // Serial.println("new value : " + String(*p));
 }
+
 void choice_handler(byte *p) {
   Serial.print(F("Enter new value : "));
   int newvalue = getString().toInt();
@@ -927,6 +940,7 @@ void choice_handler(byte *p) {
   Serial.println(String(*p));
   // Serial.println("new value : " + String(*p));
 }
+
 void update_distance() {
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
@@ -935,6 +949,7 @@ void update_distance() {
   digitalWrite(trigPin, LOW);
   duration = pulseIn(echoPin, HIGH);
   distance = duration * 0.034 / 2;
+  distance = distance / 2.54;
 
   digitalWrite(trigPin2, LOW);
   delayMicroseconds(2);
@@ -943,7 +958,9 @@ void update_distance() {
   digitalWrite(trigPin2, LOW);
   duration2 = pulseIn(echoPin2, HIGH);
   distance2 = duration2 * 0.034 / 2;
+  distance2 = distance2 / 2.54;
 }
+
 bool change_Detector(int value_to_be_compare, int previous_value, int margin) {
   if ((value_to_be_compare >= previous_value - margin) &&
       (value_to_be_compare <= previous_value + margin)) {
@@ -952,6 +969,7 @@ bool change_Detector(int value_to_be_compare, int previous_value, int margin) {
     return true;
   }
 }
+
 int change_detector(int val1, int val2) {
   // int value3 = val1 - val2;
   // normalizing values for better results
@@ -967,6 +985,7 @@ int change_detector(int val1, int val2) {
     return (val1 - val2);
   }
 }
+
 int holder_manager() {
   // println("working on : " + String_holder);
   // break down string like 2.4.56 into 2, 4, 56 and print them after storing in
@@ -988,6 +1007,7 @@ int holder_manager() {
     // println("value : " + String(b));
   }
 }
+
 void inputHandler(String str_input) {
   if (str_input.indexOf('!') != -1) {
     String_holder = "";
@@ -1005,14 +1025,18 @@ void inputHandler(String str_input) {
     inputHandler(str_input.toInt());
   }
 }
+
 void LED_ON() {
   if (warningLED) {
     digitalWrite(LED, HIGH);
   }
 }
+
 void LED_OFF() { digitalWrite(LED, LOW); }
+
 void Buzzer_ON() {
   if (BuzzerBeeping)
     digitalWrite(Buzzer, HIGH);
 }
+
 void Buzzer_OFF() { digitalWrite(Buzzer, LOW); }
