@@ -1,7 +1,8 @@
-//$ last work 27/August/23 [12:27 AM]
-//  ! unknow behaviour report :
-//  ! when serial port is not monitoring gyro won't work fine
+//$ last work 29/October/23 [06:15 PM]
+// @Version 2
+// # Before changing serial functionality
 //  * ---------------------------------------------------------------------------------------------->    servo start   <------------
+//! D2 (Ultra Sound (2) is not function)
 #include <Servo.h>
 Servo Myservo;
 int pos;
@@ -20,9 +21,8 @@ void update_distance();
 byte monitor_on = 0;
 // * ----------------------------------------------------------------------------------------------->    servo ends   <------------
 int choice = 0;
-String String_holder = "2.5.2.4";
+String String_holder = "2.5.2.3"; // monitor over gyro sensor
 int aggressive_monitoring = 0;
-// int input_timeout = 10000;
 // # Functions =============================================
 int getPinNumber(int required_pin);
 void switchManager(int PinNo_, int status);
@@ -83,6 +83,7 @@ int distance2;  // variable for the distance measurement
 #define pin3 3 // Sender pin: 1 and receiver pin: D2 (3rd) (Green)
 #define pin4 8 // Sender pin: 2 and receiver pin: D3 (4th) (Green mini)
 byte defaultDelay = 50;
+
 int getPinNumber(int required_pin) {
   if (required_pin == 1) {
     return pin1;
@@ -131,9 +132,15 @@ void decimal_to_binary(int input_) {
     }
   } else if (input_ == 1) {
     out2 = 1;
+  } else {
+    if (input_ == 0) {
+      Serial.println("input becomes 0");
+    } else {
+      Serial.println("unexpected error #135");
+    }
   }
-  // Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ",
-  // " + String(out2) + ", " + String(out1));
+  // Serial.println("Managed output: " + String(out4) + ", " + String(out3) +
+  // "," + String(out2) + ", " + String(out1));
   delay(defaultDelay);
   SwitchInverter(out4, out3, out2, out1, true);
   offOuput();
@@ -249,6 +256,7 @@ char *convert_int16_to_str(
   return tmp_str;
 }
 byte gy_beep = 0;
+
 void check_gy_sensor(bool print_records, int neg_motion) {
   delay(100);
   Wire.beginTransmission(MPU_ADDR);
@@ -302,20 +310,18 @@ void check_gy_sensor(bool print_records, int neg_motion) {
                               change_detector(accelerometer_y, mainY)) /
                              2)) +
                      ") ");
-        Serial.println(F(" #"));
         // global_X = mainX;
         // global_Y = mainY;
         // global_Z = mainZ;
       }
       if (mainX != 0 || mainY != 0) {
         if (gy_beep == 0) {
-          Serial.println(F("( @_ignored_@ )"));
+          Serial.println(F(" ( @_ignored_@ )"));
           gy_beep++;
         } else if (gy_beep >= 1) {
           custom_beep(alarm_time, 200);
           sendRFmsg(1);
-
-          Serial.println(F("#######################"));
+          Serial.println(F(" Alert Send! "));
           gy_beep = 0;
         }
       }
@@ -599,7 +605,7 @@ void setup() {
 
   pinMode(trigPin2, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin2, INPUT);  // Sets the echoPin as an INPUT
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println(F("Activating Watcher..."));
   Wire.begin();
   Wire.beginTransmission(
@@ -612,9 +618,9 @@ void setup() {
 void loop() {
 
   if (Serial.available() >= 1) {
-    String tempstr_ = Serial.readStringUntil('\n');
-    if (tempstr_.length() > 0) {
-      inputHandler(tempstr_);
+    String tempStr = Serial.readStringUntil('\n');
+    if (tempStr.length() > 0) {
+      inputHandler(tempStr);
     }
   }
   if (servo_Rotation) {
@@ -693,9 +699,9 @@ void servoRotation() {
   for (pos = 0; pos <= 180 && servo_Rotation; pos++) {
 
     if (Serial.available() >= 1) {
-      String tempstr_ = Serial.readStringUntil('\n');
-      if (tempstr_.length() > 0) {
-        inputHandler(tempstr_);
+      String tempStr = Serial.readStringUntil('\n');
+      if (tempStr.length() > 0) {
+        inputHandler(tempStr);
       }
     }
     Myservo.write(pos);
@@ -719,9 +725,9 @@ void servoRotation() {
 
   for (pos = 180; pos >= 0 && servo_Rotation; pos--) {
     if (Serial.available() >= 1) {
-      String tempstr_ = Serial.readStringUntil('\n');
-      if (tempstr_.length() > 0) {
-        inputHandler(tempstr_);
+      String tempStr = Serial.readStringUntil('\n');
+      if (tempStr.length() > 0) {
+        inputHandler(tempStr);
       }
     }
 
@@ -888,8 +894,8 @@ String getString() {
   }
   String sdata = "";
   char ch = '0';
-  bool condit = true;
-  while (condit) {
+  bool condition_ = true;
+  while (condition_) {
 
     // if (Serial.available() > 0)
     // {
@@ -904,14 +910,14 @@ String getString() {
     } else if (ch == '.') {
       // Serial.print("Sr we got ");
       // Serial.println(sdata);
-      condit = false;
+      condition_ = false;
       delay(100);
       // FileNameLoop = sdata;
     } else if (ch == ',') {
       Serial.println(F("Str cleared\n"));
       sdata = "";
       // Print(sdata);
-      // condit = false;
+      // condition_ = false;
       // FileNameLoop = sdata;
     }
     // }
