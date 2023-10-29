@@ -1,6 +1,7 @@
-//$ last work 28/August/23 [12:05 AM]
-// # In this release main focus is to force module to work with SECO project
+//$ last work 29/October/23 [06:15 PM]
+// # Before changing serial functionality
 //  * ---------------------------------------------------------------------------------------------->    servo start   <------------
+//! D2 (Ultra Sound (2) is not function)
 #include <Servo.h>
 Servo Myservo;
 int pos;
@@ -19,9 +20,8 @@ void update_distance();
 byte monitor_on = 0;
 // * ----------------------------------------------------------------------------------------------->    servo ends   <------------
 int choice = 0;
-String String_holder = "2.5.2.4";
+String String_holder = "2.5.2.3"; // monitor over gyro sensor
 int aggressive_monitoring = 0;
-// int input_timeout = 10000;
 // # Functions =============================================
 int getPinNumber(int required_pin);
 void switchManager(int PinNo_, int status);
@@ -131,9 +131,15 @@ void decimal_to_binary(int input_) {
     }
   } else if (input_ == 1) {
     out2 = 1;
+  } else {
+    if (input_ == 0) {
+      Serial.println("input becomes 0");
+    } else {
+      Serial.println("unexpected error #135");
+    }
   }
-  // Serial.println("Managed output: " + String(out4) + ", " + String(out3) + ",
-  // " + String(out2) + ", " + String(out1));
+  // Serial.println("Managed output: " + String(out4) + ", " + String(out3) +
+  // "," + String(out2) + ", " + String(out1));
   delay(defaultDelay);
   SwitchInverter(out4, out3, out2, out1, true);
   offOuput();
@@ -303,20 +309,18 @@ void check_gy_sensor(bool print_records, int neg_motion) {
                               change_detector(accelerometer_y, mainY)) /
                              2)) +
                      ") ");
-        Serial.println(F(" #"));
         // global_X = mainX;
         // global_Y = mainY;
         // global_Z = mainZ;
       }
       if (mainX != 0 || mainY != 0) {
         if (gy_beep == 0) {
-          Serial.println(F("( @_ignored_@ )"));
+          Serial.println(F(" ( @_ignored_@ )"));
           gy_beep++;
         } else if (gy_beep >= 1) {
           custom_beep(alarm_time, 200);
           sendRFmsg(1);
-
-          Serial.println(F("#######################"));
+          Serial.println(F(" Alert Send! "));
           gy_beep = 0;
         }
       }
@@ -600,7 +604,7 @@ void setup() {
 
   pinMode(trigPin2, OUTPUT); // Sets the trigPin as an OUTPUT
   pinMode(echoPin2, INPUT);  // Sets the echoPin as an INPUT
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println(F("Activating Watcher..."));
   Wire.begin();
   Wire.beginTransmission(
