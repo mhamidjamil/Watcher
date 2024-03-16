@@ -15,6 +15,7 @@ public:
   void led_on();
   void led_off();
 
+  void blink(int times, int delay_);
   void print(String tempStr);
   void println(String tempStr);                 // actually Serail.println()
   void println(String tempStr, bool condition); // only print if it has to be
